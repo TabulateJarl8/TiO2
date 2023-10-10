@@ -1,3 +1,5 @@
+use std::fs;
+
 use clap::arg;
 use log::error;
 
@@ -10,7 +12,7 @@ fn main() {
     let matches = clap::command!()
         .args(&[
             arg!(<INFILE> "The input file. Can be a .8Xp file or decompiled TI-BASIC text."),
-            arg!(-d --decompile "Decompile the 8Xp file only, don't interpret it."),
+            arg!(-d --decompile [OUTFILE] "Only decompile and write to an output file. Defaults to stdout.")
         ])
         .get_matches();
 
@@ -39,5 +41,23 @@ fn main() {
         }
     };
 
-    println!("{}", ti_file_string);
+    if matches.contains_id("decompile") {
+        let outfile = match matches.get_one::<String>("decompile") {
+            Some(v) => v,
+            None => {
+                // print to stdout and exit
+                println!("{}", ti_file_string);
+                std::process::exit(0);
+            },
+        };
+        match fs::write(outfile, ti_file_string) {
+            Ok(_) => (),
+            Err(e) => {
+                error!("Unable to write file: {}", e);
+                std::process::exit(1);
+            },
+        }
+    } else {
+        // println!("{}", ti_file_string);
+    }
 }
