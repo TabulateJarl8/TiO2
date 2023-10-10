@@ -1,10 +1,5 @@
 pub mod tokens;
 
-use std::{
-    fs::File,
-    io::{BufReader, Read},
-};
-
 use log::{debug, error};
 
 #[derive(Debug, Clone)]
@@ -20,22 +15,16 @@ fn valid_8xp_header(header: [u8; 74]) -> bool {
     header[..10] == [42, 42, 84, 73, 56, 51, 70, 42, 26, 10]
 }
 
-pub fn read_binary_file(filename: &str) -> Result<TIFile, anyhow::Error> {
-    let f = File::open(filename)?;
-    let mut reader = BufReader::new(f);
-    let mut buffer = Vec::new();
-
-    reader.read_to_end(&mut buffer)?;
-
-    if buffer.len() < 74 {
-        debug!("{:?}", buffer);
+fn read_binary_data(data: Vec<u8>) -> Result<TIFile, anyhow::Error> {
+    if data.len() < 74 {
+        debug!("{:?}", data);
         return Err(anyhow::Error::msg(
             "File is only long enough to contain metadata.",
         ));
     }
 
     let mut header: [u8; 74] = [0; 74];
-    header.clone_from_slice(&buffer[..74]);
+    header.clone_from_slice(&data[..74]);
 
     if !valid_8xp_header(header) {
         debug!("{:?}", &header[..10]);
@@ -44,8 +33,8 @@ pub fn read_binary_file(filename: &str) -> Result<TIFile, anyhow::Error> {
         ));
     }
 
-    let data: Vec<u8> = buffer[74..buffer.len() - 2].to_vec();
-    let footer: Vec<u8> = buffer[buffer.len() - 2..buffer.len()].to_vec();
+    let data: Vec<u8> = data[74..data.len() - 2].to_vec();
+    let footer: Vec<u8> = data[data.len() - 2..data.len()].to_vec();
 
     Ok(TIFile {
         header,
@@ -54,7 +43,8 @@ pub fn read_binary_file(filename: &str) -> Result<TIFile, anyhow::Error> {
     })
 }
 
-pub fn decompile(ti_data: TIFile) -> Vec<String> {
+pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
+    let ti_data = read_binary_data(data)?;
     debug!("{:x?}", ti_data);
 
     let mut plaintext = String::new();
@@ -84,7 +74,7 @@ pub fn decompile(ti_data: TIFile) -> Vec<String> {
                 byte_num += 1;
             }
         } else if byte_num + 1 < ti_data.data.len() {
-             // If the current byte is not in the tokens, see if we can add
+            // If the current byte is not in the tokens, see if we can add
             // on the next byte to make it work. If so, use that, otherwise
             // spit out an error but do the rest.
             match double_tokens.get(&[curr_byte, ti_data.data[byte_num + 1]]) {
@@ -101,5 +91,5 @@ pub fn decompile(ti_data: TIFile) -> Vec<String> {
         }
     }
 
-    plaintext.split("\n").map(str::to_string).collect()
+    Ok(plaintext.split('\n').map(str::to_string).collect())
 }
