@@ -2,6 +2,19 @@ use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 lazy_static! {
+    /// Provides a `HashMap` of single-byte tokens where the key is a `u8` and the value is a `&'static str`.
+    ///
+    /// This hash map contains mappings for single-byte tokens used in some TI-8XP files.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tio2::decompile::tokens::SINGLE_BYTE_TOKENS;
+    ///
+    /// if let Some(token) = SINGLE_BYTE_TOKENS.get(&0x01) {
+    ///     println!("Token for 0x01: {}", token);
+    /// }
+    /// ```
     pub static ref SINGLE_BYTE_TOKENS: HashMap<u8, &'static str> = [
         (0x01, ">DMS"),
         (0x02, ">Dec"),
@@ -250,7 +263,19 @@ lazy_static! {
 }
 
 lazy_static! {
-
+    /// Provides a `HashMap` of double-byte tokens where the key is a `&'static [u8; 2]` and the value is a `&'static str`.
+    ///
+    /// This hash map contains mappings for double-byte tokens used in some TI-8XP files.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tio2::decompile::tokens::DOUBLE_BYTE_TOKENS;
+    ///
+    /// if let Some(token) = DOUBLE_BYTE_TOKENS.get(&[0x5C, 0x00]) {
+    ///     println!("Token for 0x5C, 0x00: {}", token);
+    /// }
+    /// ```
     pub static ref DOUBLE_BYTE_TOKENS: HashMap<&'static [u8; 2], &'static str> = [
         // System variables (incomplete: TODO)
         (&[0x5C, 0x00], "[A]"),

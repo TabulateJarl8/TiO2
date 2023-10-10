@@ -1,13 +1,19 @@
+//! This module contains various utility functions.
+
 use std::{
     fs::File,
     io::{BufReader, Read},
 };
 
-/// Read a file into a `Vec<u8>`.
+/// Reads the contents of a file and returns them as a vector of bytes.
 ///
-/// # Errors
+/// # Arguments
 ///
-/// This function will return an error if the file fails to open (`io::Result<File>`) or if the BufReader encounters and error while reading into the vector buffer (`io::Result<usize>`) 
+/// * `filename` - A reference to a string representing the path to the file to be read.
+///
+/// # Returns
+///
+/// Returns a `Result` containing a vector of bytes if the file is successfully read, or an error if the file cannot be read. 
 pub fn read_file_bytes(filename: &str) -> Result<Vec<u8>, anyhow::Error> {
     let f = File::open(filename)?;
     let mut reader = BufReader::new(f);
@@ -17,6 +23,20 @@ pub fn read_file_bytes(filename: &str) -> Result<Vec<u8>, anyhow::Error> {
     Ok(buffer)
 }
 
+/// Checks if the provided binary data is valid UTF-8 encoded text.
+/// 
+/// This function checks if the input bytes are valid UTF-8 encoded text by attempting
+/// to decode the bytes as a UTF-8 string. It further validates that the UTF-16 encoding
+/// of the string does not contain surrogate code points `(0xD800..=0xDFFF)`, which are
+/// invalid in UTF-8 encoding.
+/// 
+/// # Arguments
+///
+/// * `data` - A vector of bytes that may represent UTF-8 encoded text.
+///
+/// # Returns
+///
+/// Returns `true` if the data is valid UTF-8 text, otherwise `false`.
 pub fn is_utf8(data: Vec<u8>) -> bool {
     match std::str::from_utf8(&data) {
         Ok(v) => {
