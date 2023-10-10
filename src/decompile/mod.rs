@@ -68,34 +68,34 @@ pub fn decompile(ti_data: TIFile) -> Vec<String> {
         // If the current byte exists in the tokens, see if we
         // can find a more specific one (2 bytes) that matches. If not, use
         // the first. We only need to worry about up to 2 bytes.
-        if single_tokens.contains_key(&curr_byte) {
-            if byte_num + 1 < ti_data.data.len()
-                && double_tokens.contains_key(&[curr_byte, ti_data.data[byte_num + 1]])
-            {
-                plaintext.push_str(double_tokens[&[curr_byte, ti_data.data[byte_num + 1]]]);
-                byte_num += 2;
+        if let Some(single_token) = single_tokens.get(&curr_byte) {
+            if byte_num + 1 < ti_data.data.len() {
+                if let Some(double_token) =
+                    double_tokens.get(&[curr_byte, ti_data.data[byte_num + 1]])
+                {
+                    plaintext.push_str(double_token);
+                    byte_num += 2;
+                } else {
+                    plaintext.push_str(single_token);
+                    byte_num += 1;
+                }
             } else {
-                plaintext.push_str(single_tokens[&curr_byte]);
+                plaintext.push_str(single_token);
                 byte_num += 1;
             }
-
-            continue;
-        } else {
-            // If the current byte is not in the tokens, see if we can add
+        } else if byte_num + 1 < ti_data.data.len() {
+             // If the current byte is not in the tokens, see if we can add
             // on the next byte to make it work. If so, use that, otherwise
             // spit out an error but do the rest.
-
-            if byte_num + 1 < ti_data.data.len() {
-                match double_tokens.get(&[curr_byte, ti_data.data[byte_num + 1]]) {
-                    Some(token) => {
-                        plaintext.push_str(token);
-                        byte_num += 2;
-                    }
-                    None => {
-                        error!("Could not decode {:x?}", curr_byte);
-                        error!("Next byte: {:x?}", ti_data.data.get(byte_num + 1));
-                        byte_num += 1;
-                    }
+            match double_tokens.get(&[curr_byte, ti_data.data[byte_num + 1]]) {
+                Some(token) => {
+                    plaintext.push_str(token);
+                    byte_num += 2;
+                }
+                None => {
+                    error!("Could not decode {:x?}", curr_byte);
+                    error!("Next byte: {:x?}", ti_data.data.get(byte_num + 1));
+                    byte_num += 1;
                 }
             }
         }
