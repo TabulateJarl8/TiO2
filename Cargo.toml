@@ -2,6 +2,12 @@
 name = "tio2"
 version = "0.1.0"
 edition = "2021"
+authors = ["Connor Sample <tabulatejarl8@gmail.com>"]
+description = "TI-BASIC decompiler and interpreter written in Rust"
+homepage = "https://tabulate.tech"
+repository = "https://github.com/TabulateJarl8/TiO2"
+license = "GPL-3.0-or-later"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
