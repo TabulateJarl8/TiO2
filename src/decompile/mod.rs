@@ -69,7 +69,9 @@ pub fn decompile(ti_data: TIFile) -> Vec<String> {
         // can find a more specific one (2 bytes) that matches. If not, use
         // the first. We only need to worry about up to 2 bytes.
         if single_tokens.contains_key(&curr_byte) {
-            if byte_num + 1 < ti_data.data.len() && double_tokens.contains_key(&[curr_byte, ti_data.data[byte_num + 1]]) {
+            if byte_num + 1 < ti_data.data.len()
+                && double_tokens.contains_key(&[curr_byte, ti_data.data[byte_num + 1]])
+            {
                 plaintext.push_str(double_tokens[&[curr_byte, ti_data.data[byte_num + 1]]]);
                 byte_num += 2;
             } else {
@@ -88,12 +90,12 @@ pub fn decompile(ti_data: TIFile) -> Vec<String> {
                     Some(token) => {
                         plaintext.push_str(token);
                         byte_num += 2;
-                    },
+                    }
                     None => {
                         error!("Could not decode {:x?}", curr_byte);
                         error!("Next byte: {:x?}", ti_data.data.get(byte_num + 1));
                         byte_num += 1;
-                    },
+                    }
                 }
             }
         }
