@@ -3,6 +3,11 @@ use std::{
     io::{BufReader, Read},
 };
 
+/// Read a file into a `Vec<u8>`.
+///
+/// # Errors
+///
+/// This function will return an error if the file fails to open (`io::Result<File>`) or if the BufReader encounters and error while reading into the vector buffer (`io::Result<usize>`) 
 pub fn read_file_bytes(filename: &str) -> Result<Vec<u8>, anyhow::Error> {
     let f = File::open(filename)?;
     let mut reader = BufReader::new(f);
