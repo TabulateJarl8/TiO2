@@ -78,6 +78,6 @@ fn main() {
                 std::process::exit(1);
             }
         };
-        println!("{:x?}", compile::create_metadata(&file_data, "thishduey"));
+        println!("{:x?}", compile::create_header(&file_data, "thishduey"));
     }
 }

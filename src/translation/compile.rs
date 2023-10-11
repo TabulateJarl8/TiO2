@@ -4,9 +4,21 @@ use crate::utils::copy_into_index;
 
 use super::common::FILE_HEADER;
 
-/// Calculate the size bytes for a given filesize
-/// Max filesize is 255*255
-/// Since one byte can only hold 255, we have a size followed by a carry byte
+/// Calculate the size bytes for a given filesize.
+///
+/// The maximum filesize is 255*255. Since one byte can only hold 255, we have a size followed by a carry byte.
+///
+/// # Arguments
+///
+/// * `size` - The size of the file.
+///
+/// # Returns
+///
+/// A result containing an array of two u8 bytes representing the file size.
+///
+/// # Errors
+///
+/// Returns an error if the provided size exceeds the absolute limit.
 pub fn create_size_for_header(size: usize) -> Result<[u8; 2], anyhow::Error> {
     const ABSOLUTE_LIMIT: usize = 255 * 255;
     if size > ABSOLUTE_LIMIT {
@@ -25,7 +37,23 @@ pub fn create_size_for_header(size: usize) -> Result<[u8; 2], anyhow::Error> {
     Ok(header_size)
 }
 
-pub fn create_metadata(
+/// Create a metadata header for a TI-8XP program.
+///
+/// This function generates a metadata header for a TI-8XP program.
+///
+/// # Arguments
+///
+/// * `ti_basic_data` - The main body bytes of an 8XP program.
+/// * `program_name` - The name of the program.
+///
+/// # Returns
+///
+/// A result containing an array of 74 u8 bytes representing the metadata header.
+///
+/// # Errors
+///
+/// Returns an error if the header length is incorrect.
+pub fn create_header(
     ti_basic_data: &Vec<u8>,
     program_name: &str,
 ) -> Result<[u8; 74], anyhow::Error> {

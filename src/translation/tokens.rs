@@ -9,7 +9,7 @@ lazy_static! {
     /// # Example
     ///
     /// ```
-    /// use tio2::decompile::tokens::SINGLE_BYTE_TOKENS;
+    /// use tio2::translation::tokens::SINGLE_BYTE_TOKENS;
     ///
     /// if let Some(token) = SINGLE_BYTE_TOKENS.get(&0x01) {
     ///     println!("Token for 0x01: {}", token);
@@ -270,7 +270,7 @@ lazy_static! {
     /// # Example
     ///
     /// ```
-    /// use tio2::decompile::tokens::DOUBLE_BYTE_TOKENS;
+    /// use tio2::translation::tokens::DOUBLE_BYTE_TOKENS;
     ///
     /// if let Some(token) = DOUBLE_BYTE_TOKENS.get(&[0x5C, 0x00]) {
     ///     println!("Token for 0x5C, 0x00: {}", token);

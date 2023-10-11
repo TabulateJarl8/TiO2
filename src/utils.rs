@@ -51,6 +51,37 @@ pub fn is_utf8(data: Vec<u8>) -> bool {
     }
 }
 
+/// Copies the contents of the source byte slice into the destination byte slice,
+/// starting at the specified index in the destination slice.
+///
+/// # Arguments
+///
+/// * `dest` - A mutable reference to the destination byte slice where the data will be copied.
+/// * `src` - A reference to the source byte slice containing the data to be copied.
+/// * `start_index` - The index in the destination slice where the copying will begin.
+///
+/// # Returns
+///
+/// The updated index after copying all the elements from the source slice to the destination slice.
+///
+/// # Examples
+///
+/// ```
+/// use tio2::utils::copy_into_index;
+/// 
+/// let mut dest = [0u8; 5];
+/// let src = [1u8, 2u8, 3u8];
+/// let start_index = 1;
+/// let new_index = copy_into_index(&mut dest, &src, start_index);
+/// assert_eq!(dest, [0u8, 1u8, 2u8, 3u8, 0u8]);
+/// assert_eq!(new_index, start_index + src.len());
+/// ```
+///
+/// # Note
+///
+/// This function copies the elements from the source slice to the destination slice
+/// sequentially, and it does not perform bounds checking. Ensure that the destination slice
+/// has enough capacity to accommodate the copied elements.
 pub fn copy_into_index(dest: &mut [u8], src: &[u8], mut start_index: usize) -> usize {
     for item in src {
         dest[start_index] = *item;
