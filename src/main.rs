@@ -2,7 +2,10 @@ use std::fs;
 
 use clap::arg;
 use log::error;
-use tio2::{utils, decompile, parse::lex};
+use tio2::{
+    translation::{compile, decompile},
+    utils,
+};
 
 fn main() {
     env_logger::init();
@@ -11,7 +14,7 @@ fn main() {
     let matches = clap::command!()
         .args(&[
             arg!(<INFILE> "The input file. Can be a .8Xp file or decompiled TI-BASIC text."),
-            arg!(-d --decompile [OUTFILE] "Only decompile and write to an output file. Defaults to stdout.")
+            arg!(-d --decompile [OUTFILE] "Only decompile and write to an output file. Defaults to stdout."),
         ])
         .get_matches();
 
@@ -55,7 +58,7 @@ fn main() {
                 // If no output file is specified, print to stdout and exit
                 println!("{}", ti_file_string);
                 std::process::exit(0);
-            },
+            }
         };
 
         // Write the decompiled content to the specified output file
@@ -64,9 +67,17 @@ fn main() {
             Err(e) => {
                 error!("Unable to write file: {}", e);
                 std::process::exit(1);
-            },
+            }
         }
     } else {
-        println!("{:?}", lex("If X=45"));
+        let file_data = match utils::read_file_bytes(matches.get_one::<String>("INFILE").unwrap()) {
+            Ok(v) => v, // Success, store the file data
+            Err(e) => {
+                // Error, log the message and exit the program with an 1
+                error!("Could not read file: {}", e);
+                std::process::exit(1);
+            }
+        };
+        println!("{:x?}", compile::create_metadata(&file_data, "thishduey"));
     }
 }

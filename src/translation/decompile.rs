@@ -2,17 +2,12 @@
 //! The primary struct, [`TIFile`], represents the structure of a TI-8XP file.
 //! The primary function that should be used in this module is [`decompile`]
 
-pub mod tokens;
-
 use log::{debug, error};
 
-/// Represents the structure of a TI-8XP file
-#[derive(Debug, Clone)]
-pub struct TIFile {
-    pub header: [u8; 74],
-    pub data: Vec<u8>,
-    pub footer: Vec<u8>,
-}
+use crate::translation::{
+    common::{self, TIFile},
+    tokens,
+};
 
 /// Checks if the given header is a valid TI 8XP header.
 ///
@@ -33,7 +28,7 @@ pub struct TIFile {
 ///
 /// Returns true if the header is valid, otherwise false.
 pub fn valid_8xp_header(header: [u8; 74]) -> bool {
-    header[..10] == [42, 42, 84, 73, 56, 51, 70, 42, 26, 10]
+    header[..10] == common::FILE_HEADER
 }
 
 /// Reads binary data and constructs a `TIFile` struct from it.
