@@ -1,6 +1,22 @@
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
+/// A utility function that returns the inverse mapping of byte tokens.
+/// Used when compiling instead of decompiling.
+///
+/// This function constructs a `HashMap` where the key is a `&'static str` and the value is a [`Byte`].
+///
+/// # Examples
+///
+/// ```
+/// use tio2::translation::tokens::{get_inverse_tokens, BYTE_TOKENS, Byte};
+///
+/// let inverse_tokens = get_inverse_tokens();
+/// let token = ">DMS";
+/// if let Some(byte) = inverse_tokens.get(token) {
+///     assert_eq!(&token, BYTE_TOKENS.get(byte).unwrap());
+/// }
+/// ```
 pub fn get_inverse_tokens() -> HashMap<&'static str, Byte> {
     let mut flipped: HashMap<&'static str, Byte> = Default::default();
 
@@ -11,6 +27,19 @@ pub fn get_inverse_tokens() -> HashMap<&'static str, Byte> {
     flipped
 }
 
+/// The `Byte` enum represents bytes, which can be either single bytes (`Single`) or
+/// two bytes (`Double`).
+///
+/// # Examples
+///
+/// ```
+/// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
+///
+/// // Access the token for a double byte (e.g., [0x60, 0x00])
+/// if let Some(token) = BYTE_TOKENS.get(&Byte::Double([0x60, 0x00])) {
+///     assert_eq!(token, &"Pic1");
+/// }
+/// ```
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Byte {
     Single(u8),
@@ -18,17 +47,17 @@ pub enum Byte {
 }
 
 lazy_static! {
-    /// Provides a `HashMap` of single-byte tokens where the key is a `u8` and the value is a `&'static str`.
+    /// Provides a `HashMap` of byte tokens where the key is a [`Byte`] and the value is a `&'static str`.
     ///
-    /// This hash map contains mappings for single-byte tokens used in some TI-8XP files.
+    /// This hash map contains mappings for byte tokens used in TI-8XP files.
     ///
     /// # Example
     ///
     /// ```
-    /// use tio2::translation::tokens::SINGLE_BYTE_TOKENS;
+    /// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
     ///
-    /// if let Some(token) = SINGLE_BYTE_TOKENS.get(&0x01) {
-    ///     println!("Token for 0x01: {}", token);
+    /// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
+    ///     assert_eq!(token, &">DMS");
     /// }
     /// ```
     pub static ref BYTE_TOKENS: HashMap<Byte, &'static str> = [

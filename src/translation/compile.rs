@@ -140,6 +140,29 @@ pub fn create_header(
     Ok(header)
 }
 
+/// Compile a Vec of strings into a Vec of bytes, representing a TI-8XP bytecode program.
+///
+/// This function takes a `Vec` of `&str` containing the source code lines and attempts to convert
+/// it into a sequence of bytes that represent a bytecode program. It replaces the `→` character
+/// with `->` in the input and uses a provided set of tokens to map substrings to bytes.
+///
+/// # Arguments
+///
+/// * `file_contents`: A `Vec` of `&str` containing the source code lines.
+///
+/// # Returns
+///
+/// A `Result` containing a `Vec` of `u8` bytes representing the bytecode program if compilation
+/// is successful, or an `anyhow::Error` if an error occurs during compilation.
+///
+/// # Examples
+///
+/// ```
+/// use tio2::translation::compile::compile_to_bytecode;
+///
+/// todo!();
+/// ```
+///
 pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::Error> {
     let program_string = file_contents.join("").replace("→", "->");
 
