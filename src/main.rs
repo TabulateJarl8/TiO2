@@ -2,7 +2,7 @@ use std::fs;
 
 use clap::arg;
 use log::error;
-use tio2::{utils, decompile};
+use tio2::{utils, decompile, parse::lex};
 
 fn main() {
     env_logger::init();
@@ -67,6 +67,6 @@ fn main() {
             },
         }
     } else {
-        // println!("{}", ti_file_string);
+        println!("{:?}", lex("If X=45"));
     }
 }
