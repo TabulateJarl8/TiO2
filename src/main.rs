@@ -3,7 +3,7 @@ use std::fs;
 use clap::arg;
 use log::error;
 use tio2::{
-    translation::{compile, decompile},
+    translation::{compile, decompile, common::TIFile},
     utils,
 };
 
@@ -70,14 +70,46 @@ fn main() {
             }
         }
     } else {
-        let file_data = match utils::read_file_bytes(matches.get_one::<String>("INFILE").unwrap()) {
-            Ok(v) => v, // Success, store the file data
+        // let file_data = match utils::read_file_bytes(matches.get_one::<String>("INFILE").unwrap()) {
+        //     Ok(v) => v, // Success, store the file data
+        //     Err(e) => {
+        //         // Error, log the message and exit the program with an 1
+        //         error!("Could not read file: {}", e);
+        //         std::process::exit(1);
+        //     }
+        // };
+        // println!("{:x?}", compile::create_header(&file_data, "thishduey"));
+        let res = match compile::compile_to_bytecode(vec![
+            "ClrHome\n",
+            "Input \"WEIGHT \",W\n",
+            "Input \"HEIGHT \",H\n",
+            "W*H*9.8→X\n",
+            "ClrHome\n",
+            "Disp X",
+        ]) {
+            Ok(v) => v,
             Err(e) => {
-                // Error, log the message and exit the program with an 1
-                error!("Could not read file: {}", e);
+                error!("Error when compiling: {}", e);
                 std::process::exit(1);
             }
         };
-        println!("{:x?}", compile::create_header(&file_data, "thishduey"));
+
+        let header = match compile::create_header(&res, "gpe") {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Error when compiling: {}", e);
+                std::process::exit(1);
+            },
+        };
+
+        let ti_file = TIFile {
+            header,
+            data: res,
+            footer: vec![0x0, 0x0], // this probably wont break anything right
+        };
+
+        println!("{:?}", ti_file.write_to_file());
     }
+
+
 }

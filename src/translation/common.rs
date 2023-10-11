@@ -1,3 +1,5 @@
+use std::{string::FromUtf8Error, fs::File, io::Write};
+
 /// Represents the structure of a TI-8XP file
 #[derive(Debug, Clone)]
 pub struct TIFile {
@@ -7,6 +9,25 @@ pub struct TIFile {
     pub data: Vec<u8>,
     /// The 3-byte footer (data seems to be useless)
     pub footer: Vec<u8>,
+}
+
+impl TIFile {
+    pub fn write_to_file(&self) -> Result<(), anyhow::Error> {
+        let program_name = self.extract_program_name()?;
+        let mut f = File::create(program_name + ".8XP")?;
+        f.write_all(&self.header)?;
+        f.write_all(&self.data)?;
+        f.write_all(&self.footer)?;
+
+        Ok(())
+    }
+
+    pub fn extract_program_name(&self) -> Result<String, FromUtf8Error> {
+        let result = String::from_utf8(self.header[60..68].to_vec())?;
+
+        // String NULL bytes
+        Ok(result.trim_matches(char::from(0)).to_string())
+    }
 }
 
 /// The header for TI-8XP files

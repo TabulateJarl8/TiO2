@@ -68,7 +68,7 @@ pub fn is_utf8(data: Vec<u8>) -> bool {
 ///
 /// ```
 /// use tio2::utils::copy_into_index;
-/// 
+///
 /// let mut dest = [0u8; 5];
 /// let src = [1u8, 2u8, 3u8];
 /// let start_index = 1;

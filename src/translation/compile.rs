@@ -1,8 +1,11 @@
-use log::debug;
+use log::{debug, error};
 
 use crate::utils::copy_into_index;
 
-use super::common::FILE_HEADER;
+use super::{
+    common::FILE_HEADER,
+    tokens::{get_inverse_tokens, Byte},
+};
 
 /// Calculate the size bytes for a given filesize.
 ///
@@ -106,9 +109,9 @@ pub fn create_header(
     // so we create an array of length 10 (8 + 2)
     let mut string_bytes: [u8; 10] = [0x0; 10];
     let truncated_program_name = if program_name.len() > 8 {
-        program_name.chars().take(8).collect()
+        program_name.to_ascii_uppercase().chars().take(8).collect()
     } else {
-        String::from(program_name)
+        String::from(program_name.to_ascii_uppercase())
     };
 
     debug!("truncated name: {}", truncated_program_name);
@@ -132,5 +135,62 @@ pub fn create_header(
         )));
     }
 
+    debug!("Generated header: {:x?}", header);
+
     Ok(header)
+}
+
+pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::Error> {
+    let program_string = file_contents.join("").replace("→", "->");
+
+    let tokens = get_inverse_tokens();
+
+    let longest_program_string = tokens.keys().map(|k| k.len()).max().unwrap();
+
+    let mut program_data: Vec<&Byte> = Default::default();
+
+    let mut current_char = 0;
+
+    while current_char < program_string.len() {
+        let mut found = false;
+        let mut chars_further = longest_program_string;
+
+        // Greedily start with the maximum size string we have and back
+        // down until we get to something that we can create a token from.
+        while !found && chars_further > 0 {
+            let sliced_string: String = program_string
+                .chars()
+                .take(current_char + chars_further)
+                .skip(current_char)
+                .collect();
+            debug!("slice: {:?}", sliced_string);
+            match tokens.get(sliced_string.as_str()) {
+                Some(token) => {
+                    found = true;
+                    program_data.push(token);
+                    current_char += chars_further;
+                }
+                None => chars_further -= 1,
+            }
+
+            if chars_further <= 0 {
+                error!("remainder: {:?}", &program_string[current_char..]);
+                return Err(anyhow::Error::msg(
+                    "Something went horribly wrong while compiling.",
+                ));
+            }
+        }
+    }
+
+    let program_data_bytes = program_data
+        .iter()
+        .flat_map(|byte| match byte {
+            Byte::Single(val) => vec![*val].into_iter(),
+            Byte::Double(arr) => arr.iter().cloned().collect::<Vec<u8>>().into_iter(),
+        })
+        .collect::<Vec<u8>>();
+
+    debug!("Generated data bytes: {:x?}", program_data_bytes);
+
+    Ok(program_data_bytes)
 }

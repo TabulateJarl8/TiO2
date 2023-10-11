@@ -6,7 +6,7 @@ use log::{debug, error};
 
 use crate::translation::{
     common::{self, TIFile},
-    tokens,
+    tokens::{self, Byte},
 };
 
 /// Checks if the given header is a valid TI 8XP header.
@@ -82,8 +82,7 @@ pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
     debug!("{:x?}", ti_data);
 
     let mut plaintext = String::new();
-    let single_tokens = &tokens::SINGLE_BYTE_TOKENS;
-    let double_tokens = &tokens::DOUBLE_BYTE_TOKENS;
+    let tokens = &tokens::BYTE_TOKENS;
 
     let mut byte_num = 0;
     while byte_num < ti_data.data.len() {
@@ -92,10 +91,10 @@ pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
         // If the current byte exists in the tokens, see if we
         // can find a more specific one (2 bytes) that matches. If not, use
         // the first. We only need to worry about up to 2 bytes.
-        if let Some(single_token) = single_tokens.get(&curr_byte) {
+        if let Some(single_token) = tokens.get(&Byte::Single(curr_byte)) {
             if byte_num + 1 < ti_data.data.len() {
                 if let Some(double_token) =
-                    double_tokens.get(&[curr_byte, ti_data.data[byte_num + 1]])
+                    tokens.get(&Byte::Double([curr_byte, ti_data.data[byte_num + 1]]))
                 {
                     plaintext.push_str(double_token);
                     byte_num += 2;
@@ -111,7 +110,7 @@ pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
             // If the current byte is not in the tokens, see if we can add
             // on the next byte to make it work. If so, use that, otherwise
             // spit out an error but do the rest.
-            match double_tokens.get(&[curr_byte, ti_data.data[byte_num + 1]]) {
+            match tokens.get(&Byte::Double([curr_byte, ti_data.data[byte_num + 1]])) {
                 Some(token) => {
                     plaintext.push_str(token);
                     byte_num += 2;
