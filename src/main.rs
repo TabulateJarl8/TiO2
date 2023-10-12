@@ -3,7 +3,7 @@ use std::fs;
 use clap::arg;
 use log::error;
 use tio2::{
-    translation::{compile, decompile, common::TIFile},
+    translation::{common::TIFile, compile, decompile},
     utils,
 };
 
@@ -94,22 +94,20 @@ fn main() {
             }
         };
 
-        let header = match compile::create_header(&res, "gpe") {
-            Ok(v) => v,
+        let (header, footer) = match compile::create_metadata(&res, "gpe") {
+            Ok((h, f)) => (h, f),
             Err(e) => {
                 error!("Error when compiling: {}", e);
                 std::process::exit(1);
-            },
+            }
         };
 
         let ti_file = TIFile {
             header,
             data: res,
-            footer: vec![0x0, 0x0], // this probably wont break anything right
+            footer: footer.to_vec(),
         };
 
         println!("{:?}", ti_file.write_to_file());
     }
-
-
 }

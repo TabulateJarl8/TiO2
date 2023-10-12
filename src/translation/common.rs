@@ -1,4 +1,4 @@
-use std::{string::FromUtf8Error, fs::File, io::Write};
+use std::{fs::File, io::Write, string::FromUtf8Error};
 
 /// A helper struct for managing TI-84 Plus calculator files (8XP format).
 ///

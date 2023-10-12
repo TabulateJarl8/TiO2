@@ -7,7 +7,7 @@ use super::{
     tokens::{get_inverse_tokens, Byte},
 };
 
-/// Calculate the size bytes for a given filesize.
+/// Calculate the bytes and carry bit for a given size.
 ///
 /// The maximum filesize is 255*255. Since one byte can only hold 255, we have a size followed by a carry byte.
 ///
@@ -22,7 +22,7 @@ use super::{
 /// # Errors
 ///
 /// Returns an error if the provided size exceeds the absolute limit.
-pub fn create_size_for_header(size: usize) -> Result<[u8; 2], anyhow::Error> {
+pub fn int_to_bytes(size: usize) -> Result<[u8; 2], anyhow::Error> {
     const ABSOLUTE_LIMIT: usize = 255 * 255;
     if size > ABSOLUTE_LIMIT {
         return Err(anyhow::Error::msg(format!(
@@ -30,19 +30,21 @@ pub fn create_size_for_header(size: usize) -> Result<[u8; 2], anyhow::Error> {
             size, ABSOLUTE_LIMIT
         )));
     }
-    let mut header_size: [u8; 2] = [0; 2];
+    let mut bytes: [u8; 2] = [0; 2];
 
     // size byte
-    header_size[0] = (size - (255 * (size / 255))) as u8;
+    bytes[0] = (size & 0xFF) as u8;
     // carry byte
-    header_size[1] = (size / 255) as u8;
+    bytes[1] = ((size >> 8) & 0xFF) as u8;
 
-    Ok(header_size)
+    Ok(bytes)
 }
 
-/// Create a metadata header for a TI-8XP program.
+/// Create a metadata header and footer for a TI-8XP program.
 ///
-/// This function generates a metadata header for a TI-8XP program.
+/// This function generates a metadata header and footer (checksum) for a TI-8XP program.
+///
+/// [This](https://github.com/SmellyModder/TI8xp/blob/main/src/main/java/net/smelly/tieightxp/TIPrgmCompiler.java#L105) GitHub project was a good reference in making this.
 ///
 /// # Arguments
 ///
@@ -51,15 +53,15 @@ pub fn create_size_for_header(size: usize) -> Result<[u8; 2], anyhow::Error> {
 ///
 /// # Returns
 ///
-/// A result containing an array of 74 u8 bytes representing the metadata header.
+/// A result containing a tuple of two arrays. The first array is of 74 u8 bytes representing the metadata header, and the second array is of 2 u8 bytes representing the footer.
 ///
 /// # Errors
 ///
 /// Returns an error if the header length is incorrect.
-pub fn create_header(
+pub fn create_metadata(
     ti_basic_data: &Vec<u8>,
     program_name: &str,
-) -> Result<[u8; 74], anyhow::Error> {
+) -> Result<([u8; 74], [u8; 2]), anyhow::Error> {
     let mut header: [u8; 74] = [0x0; 74];
     let mut index_pointer: usize = 0;
 
@@ -76,31 +78,36 @@ pub fn create_header(
     //  So, using the extra characters this section of the header becomes
     //  [NULL]comment string, 42 chars[DC4][NULL][NEWLINE]
 
-    //  The comment appears to just be plain ASCII text, so not using
-    //  binary for it here.
+    //  I've seen other people use 0xA here, so maybe that would fix it if it breaks
     header[index_pointer] = 0x0;
     index_pointer += 1;
 
     index_pointer = copy_into_index(
         &mut header,
-        "File compiled by TiO2 from TabulateJarl8".as_bytes(),
+        b"File compiled by TiO2 from TabulateJarl8\x00\x00",
         index_pointer,
     );
+
+    // data.len() + 19, carry byte
+    index_pointer = copy_into_index(
+        &mut header,
+        &int_to_bytes(ti_basic_data.len() + 19)?,
+        index_pointer,
+    );
+
     index_pointer = copy_into_index(
         &mut header,
         &[
-            0x0, 0x0,  // two null bytes
-            0x4E, // any character?
-            0x0,  // some character
-            0xA, 0x0,
+            // some junk im not sure about
+            0xD, 0x0,
         ],
         index_pointer,
     );
 
     let size = ti_basic_data.len() + 2;
-    index_pointer = copy_into_index(&mut header, &create_size_for_header(size)?, index_pointer);
+    index_pointer = copy_into_index(&mut header, &int_to_bytes(size)?, index_pointer);
 
-    // denotes start of program name
+    // 0x05 means editable program, 0x06 means uneditable
     header[index_pointer] = 0x05;
     index_pointer += 1;
 
@@ -120,13 +127,9 @@ pub fn create_header(
     index_pointer = copy_into_index(&mut header, &string_bytes, index_pointer);
 
     // Adding the size a second time as it is repeated after the name
-    index_pointer = copy_into_index(&mut header, &create_size_for_header(size)?, index_pointer);
+    index_pointer = copy_into_index(&mut header, &int_to_bytes(size)?, index_pointer);
 
-    index_pointer = copy_into_index(
-        &mut header,
-        &create_size_for_header(size - 2)?,
-        index_pointer,
-    );
+    index_pointer = copy_into_index(&mut header, &int_to_bytes(size - 2)?, index_pointer);
 
     if index_pointer != 74 {
         return Err(anyhow::Error::msg(format!(
@@ -135,9 +138,14 @@ pub fn create_header(
         )));
     }
 
-    debug!("Generated header: {:x?}", header);
+    let checksum = [ti_basic_data, &header[55..]].concat().iter().map(|&x| x as u32).sum::<u32>() as usize;
 
-    Ok(header)
+    let footer = int_to_bytes(checksum)?;
+
+    debug!("Generated header: {:x?}", header);
+    debug!("Generated footer: {:x?}", footer);
+
+    Ok((header, footer))
 }
 
 /// Compile a Vec of strings into a Vec of bytes, representing a TI-8XP bytecode program.

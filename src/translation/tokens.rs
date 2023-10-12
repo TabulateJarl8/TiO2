@@ -224,7 +224,7 @@ lazy_static! {
         (Byte::Single(0xAB), "rand"),
         (Byte::Single(0xAC), "π"),
         (Byte::Single(0xAD), "getKey"),
-        (Byte::Single(0xAE), "\""),
+        (Byte::Single(0xAE), "\'"),
         (Byte::Single(0xAF), "?"),
         (Byte::Single(0xB0), "-"),
         (Byte::Single(0xB1), "int("),
