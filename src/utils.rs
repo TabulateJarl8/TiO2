@@ -2,7 +2,8 @@
 
 use std::{
     fs::File,
-    io::{BufReader, Read},
+    io::{BufRead, BufReader, Read},
+    path::Path,
 };
 
 /// Reads the contents of a file and returns them as a vector of bytes.
@@ -21,6 +22,15 @@ pub fn read_file_bytes(filename: &str) -> Result<Vec<u8>, anyhow::Error> {
 
     reader.read_to_end(&mut buffer)?;
     Ok(buffer)
+}
+
+pub fn read_file_lines(filename: impl AsRef<Path>) -> Result<Vec<String>, anyhow::Error> {
+    let f = File::open(filename)?;
+    let reader = BufReader::new(f);
+    Ok(reader
+        .lines()
+        .map(|l| l.expect("Could not parse line"))
+        .collect())
 }
 
 /// Checks if the provided binary data is valid UTF-8 encoded text.

@@ -138,7 +138,11 @@ pub fn create_metadata(
         )));
     }
 
-    let checksum = [ti_basic_data, &header[55..]].concat().iter().map(|&x| x as u32).sum::<u32>() as usize;
+    let checksum = [ti_basic_data, &header[55..]]
+        .concat()
+        .iter()
+        .map(|&x| x as u32)
+        .sum::<u32>() as usize;
 
     let footer = int_to_bytes(checksum)?;
 

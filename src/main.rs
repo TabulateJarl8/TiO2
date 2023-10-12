@@ -1,6 +1,6 @@
 use std::fs;
 
-use clap::arg;
+use clap::{arg, ArgGroup};
 use log::error;
 use tio2::{
     translation::{common::TIFile, compile, decompile},
@@ -13,46 +13,52 @@ fn main() {
     // define the CLI interface
     let matches = clap::command!()
         .args(&[
-            arg!(<INFILE> "The input file. Can be a .8Xp file or decompiled TI-BASIC text."),
-            arg!(-d --decompile [OUTFILE] "Only decompile and write to an output file. Defaults to stdout."),
+            arg!(-r --run <INFILE> "Interpret an input file. Can be a .8XP file or decompiled TI-BASIC text."),
+            arg!(-d --decompile <INFILE> "Decompile an input file and write to an output file. Defaults to stdout."),
+            arg!(-c --compile <INFILE> "Compile a TI-BASIC text file into an 8XP file."),
+            arg!(-o --out <OUTFILE> "Specify a file to output to, if applicable (decompilation).")
         ])
+        .group(
+            ArgGroup::new("action")
+            .args(["run", "decompile", "compile"])
+            .required(true)
+        )
         .get_matches();
 
     // Attempt to read the content of the specified input file
-    let file_data = match utils::read_file_bytes(matches.get_one::<String>("INFILE").unwrap()) {
-        Ok(v) => v, // Success, store the file data
-        Err(e) => {
-            // Error, log the message and exit the program with an 1
-            error!("Could not read file: {}", e);
-            std::process::exit(1);
-        }
+    let filename = if let Some(filename) = matches.get_one::<String>("decompile") {
+        filename
+    } else if let Some(filename) = matches.get_one::<String>("compile") {
+        filename
+    } else if let Some(filename) = matches.get_one::<String>("run") {
+        filename
+    } else {
+        error!("Something has gone terribly wrong and the infile name couldn't be read");
+        std::process::exit(1);
     };
 
-    // Check if the file data is valid UTF-8 or not
-    let ti_file_string = if utils::is_utf8(file_data.clone()) {
-        match String::from_utf8(file_data) {
-            Ok(v) => v, // valid UTF-8, store the data as a UTF-8 encoded string
+    // TODO: extract these into functions
+    if matches.contains_id("decompile") {
+        let file_data = match utils::read_file_bytes(filename) {
+            Ok(v) => v, // Success, store the file data
             Err(e) => {
                 // Error, log the message and exit the program with an 1
-                error!("Could not convert string to UTF-8: {}", e);
+                error!("Could not read file: {}", e);
                 std::process::exit(1);
             }
-        }
-    } else {
-        // If the file data is not valid UTF-8, attempt to decompile it
-        match decompile::decompile(file_data) {
+        };
+
+        let ti_file_string = match decompile::decompile(file_data) {
             Ok(v) => v.join("\n"), // Success, join the result into a string
             Err(e) => {
                 // Error, log the message and exit the program with an 1
                 error!("Could not decompile 8Xp file: {}", e);
                 std::process::exit(1);
             }
-        }
-    };
+        };
 
-    // Check if the `decompile` flag is specified
-    if matches.contains_id("decompile") {
-        let outfile = match matches.get_one::<String>("decompile") {
+        // We're decompiling a given input file
+        let outfile = match matches.get_one::<String>("out") {
             Some(v) => v,
             None => {
                 // If no output file is specified, print to stdout and exit
@@ -69,24 +75,18 @@ fn main() {
                 std::process::exit(1);
             }
         }
-    } else {
-        // let file_data = match utils::read_file_bytes(matches.get_one::<String>("INFILE").unwrap()) {
-        //     Ok(v) => v, // Success, store the file data
-        //     Err(e) => {
-        //         // Error, log the message and exit the program with an 1
-        //         error!("Could not read file: {}", e);
-        //         std::process::exit(1);
-        //     }
-        // };
-        // println!("{:x?}", compile::create_header(&file_data, "thishduey"));
-        let res = match compile::compile_to_bytecode(vec![
-            "ClrHome\n",
-            "Input \"WEIGHT \",W\n",
-            "Input \"HEIGHT \",H\n",
-            "W*H*9.8→X\n",
-            "ClrHome\n",
-            "Disp X",
-        ]) {
+    } else if matches.contains_id("compile") {
+        let file_data = match utils::read_file_lines(filename) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Could not read file: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        // TODO: some tokens are broken, like SS. see AWECLC.8XP
+        let res = match compile::compile_to_bytecode(file_data.iter().map(|s| s.as_str()).collect())
+        {
             Ok(v) => v,
             Err(e) => {
                 error!("Error when compiling: {}", e);
@@ -109,5 +109,63 @@ fn main() {
         };
 
         println!("{:?}", ti_file.write_to_file());
+    } else if matches.contains_id("run") {
     }
+
+    // // Check if the file data is valid UTF-8 or not
+    // let ti_file_string = if utils::is_utf8(file_data.clone()) {
+    //     match String::from_utf8(file_data) {
+    //         Ok(v) => v, // valid UTF-8, store the data as a UTF-8 encoded string
+    //         Err(e) => {
+    //             // Error, log the message and exit the program with an 1
+    //             error!("Could not convert string to UTF-8: {}", e);
+    //             std::process::exit(1);
+    //         }
+    //     }
+    // } else {
+    //     // If the file data is not valid UTF-8, attempt to decompile it
+    // match decompile::decompile(file_data) {
+    //     Ok(v) => v.join("\n"), // Success, join the result into a string
+    //     Err(e) => {
+    //         // Error, log the message and exit the program with an 1
+    //         error!("Could not decompile 8Xp file: {}", e);
+    //         std::process::exit(1);
+    //     }
+    // }
+    // };
+
+    // // Check if the `decompile` flag is specified
+    // if matches.contains_id("decompile") {
+    // } else {
+    //     let res = match compile::compile_to_bytecode(vec![
+    //         "ClrHome\n",
+    //         "Input \"WEIGHT \",W\n",
+    //         "Input \"HEIGHT \",H\n",
+    //         "W*H*9.8→X\n",
+    //         "ClrHome\n",
+    //         "Disp X",
+    //     ]) {
+    //         Ok(v) => v,
+    //         Err(e) => {
+    //             error!("Error when compiling: {}", e);
+    //             std::process::exit(1);
+    //         }
+    //     };
+
+    //     let (header, footer) = match compile::create_metadata(&res, "gpe") {
+    //         Ok((h, f)) => (h, f),
+    //         Err(e) => {
+    //             error!("Error when compiling: {}", e);
+    //             std::process::exit(1);
+    //         }
+    //     };
+
+    //     let ti_file = TIFile {
+    //         header,
+    //         data: res,
+    //         footer: footer.to_vec(),
+    //     };
+
+    //     println!("{:?}", ti_file.write_to_file());
+    // }
 }
