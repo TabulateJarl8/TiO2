@@ -165,7 +165,7 @@ lazy_static! {
         (Byte::Single(0x6E), ">="),
         (Byte::Single(0x6F), "!="),
         (Byte::Single(0x70), "+"),
-        (Byte::Single(0x71), "-"),
+        (Byte::Single(0x71), "–"),
         (Byte::Single(0x72), "Ans"),
         (Byte::Single(0x73), "Fix "),
         (Byte::Single(0x74), "Horiz"),

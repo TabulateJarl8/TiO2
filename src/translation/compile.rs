@@ -23,13 +23,6 @@ use super::{
 ///
 /// Returns an error if the provided size exceeds the absolute limit.
 pub fn int_to_bytes(size: usize) -> Result<[u8; 2], anyhow::Error> {
-    const ABSOLUTE_LIMIT: usize = 255 * 255;
-    if size > ABSOLUTE_LIMIT {
-        return Err(anyhow::Error::msg(format!(
-            "File is beyond the allowed size for compiled TI-Basic files: yours: {}, limit: {}",
-            size, ABSOLUTE_LIMIT
-        )));
-    }
     let mut bytes: [u8; 2] = [0; 2];
 
     // size byte
@@ -89,6 +82,7 @@ pub fn create_metadata(
     );
 
     // data.len() + 19, carry byte
+    debug!("Size + 19: {}", ti_basic_data.len() + 19);
     index_pointer = copy_into_index(
         &mut header,
         &int_to_bytes(ti_basic_data.len() + 19)?,
@@ -118,7 +112,7 @@ pub fn create_metadata(
     let truncated_program_name = if program_name.len() > 8 {
         program_name.to_ascii_uppercase().chars().take(8).collect()
     } else {
-        String::from(program_name.to_ascii_uppercase())
+        program_name.to_ascii_uppercase()
     };
 
     debug!("truncated name: {}", truncated_program_name);
@@ -176,9 +170,12 @@ pub fn create_metadata(
 /// ```
 ///
 pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::Error> {
-    let program_string = file_contents.join("").replace("→", "->");
+    let program_string = file_contents.join("\n").replace('→', "->");
 
     let tokens = get_inverse_tokens();
+
+    // keep track of when we're in strings for parsing
+    let mut in_string = false;
 
     let longest_program_string = tokens.keys().map(|k| k.len()).max().unwrap();
 
@@ -190,6 +187,13 @@ pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::
         let mut found = false;
         let mut chars_further = longest_program_string;
 
+        if in_string {
+            // match the first character
+            // this might break, but i think we have all uppercase/lowercase
+            // covered so hopefully it'll be fine
+            chars_further = 1;
+        }
+
         // Greedily start with the maximum size string we have and back
         // down until we get to something that we can create a token from.
         while !found && chars_further > 0 {
@@ -198,17 +202,28 @@ pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::
                 .take(current_char + chars_further)
                 .skip(current_char)
                 .collect();
-            debug!("slice: {:?}", sliced_string);
+
+            // entering or exiting a string
+            if sliced_string.starts_with('"') {
+                in_string = !in_string;
+            }
+
+            // end of line, strings close automatically
+            if sliced_string.starts_with('\n') {
+                in_string = false;
+            }
+
             match tokens.get(sliced_string.as_str()) {
                 Some(token) => {
                     found = true;
+                    debug!("token: {:?}", sliced_string);
                     program_data.push(token);
                     current_char += chars_further;
                 }
                 None => chars_further -= 1,
             }
 
-            if chars_further <= 0 {
+            if chars_further == 0 {
                 error!("remainder: {:?}", &program_string[current_char..]);
                 return Err(anyhow::Error::msg(
                     "Something went horribly wrong while compiling.",
@@ -221,7 +236,7 @@ pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::
         .iter()
         .flat_map(|byte| match byte {
             Byte::Single(val) => vec![*val].into_iter(),
-            Byte::Double(arr) => arr.iter().cloned().collect::<Vec<u8>>().into_iter(),
+            Byte::Double(arr) => arr.to_vec().into_iter(),
         })
         .collect::<Vec<u8>>();
 
