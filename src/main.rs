@@ -15,13 +15,14 @@ fn main() {
         .args(&[
             arg!(-r --run <INFILE> "Interpret an input file. Can be a .8XP file or decompiled TI-BASIC text."),
             arg!(-d --decompile <INFILE> "Decompile an input file and write to an output file. Defaults to stdout."),
-            arg!(-c --compile <INFILE> "Compile a TI-BASIC text file into an 8XP file."),
-            arg!(-o --out <OUTFILE> "Specify a file to output to, if applicable (decompilation).")
+            arg!(-c --compile <INFILE> "Compile a TI-BASIC text file into an 8XP file.").requires("name"),
+            arg!(-o --out <OUTFILE> "Specify a file to output to, if applicable (decompilation)."),
+            arg!(-n --name <NAME> "Specify the program name to use when compiling."),
         ])
         .group(
             ArgGroup::new("action")
             .args(["run", "decompile", "compile"])
-            .required(true)
+            .required(true),
         )
         .get_matches();
 
@@ -84,6 +85,20 @@ fn main() {
             }
         };
 
+        let program_name = match matches.get_one::<String>("name") {
+            Some(v) => {
+                if !v.chars().all(|c| c.is_ascii_alphabetic()) {
+                    error!("Name argument is not ASCII Alphabetic.");
+                    std::process::exit(1);
+                }
+                v
+            }
+            None => {
+                error!("Name argument was not provided.");
+                std::process::exit(1);
+            }
+        };
+
         // TODO: some tokens are broken, like SS. see AWECLC.8XP
         let res = match compile::compile_to_bytecode(file_data.iter().map(|s| s.as_str()).collect())
         {
@@ -94,7 +109,7 @@ fn main() {
             }
         };
 
-        let (header, footer) = match compile::create_metadata(&res, "gpe") {
+        let (header, footer) = match compile::create_metadata(&res, program_name) {
             Ok((h, f)) => (h, f),
             Err(e) => {
                 error!("Error when compiling: {}", e);
