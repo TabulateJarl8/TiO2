@@ -99,7 +99,6 @@ fn main() {
             }
         };
 
-        // TODO: some tokens are broken, like SS. see AWECLC.8XP
         let res = match compile::compile_to_bytecode(file_data.iter().map(|s| s.as_str()).collect())
         {
             Ok(v) => v,
