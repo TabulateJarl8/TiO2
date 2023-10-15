@@ -24,6 +24,28 @@ pub fn read_file_bytes(filename: &str) -> Result<Vec<u8>, anyhow::Error> {
     Ok(buffer)
 }
 
+/// Reads the contents of a file line by line and returns them as a vector of strings.
+///
+/// Each line is stored as a separate string in the resulting vector.
+///
+/// # Arguments
+///
+/// * `filename`: An object that implements the `AsRef<Path>` trait, representing the path to the file
+///
+/// # Returns
+///
+/// A `Result` containing a `Vec<String>` if the file is successfully read, or an `anyhow::Error` if an error occurs during file I/O.
+///
+/// # Errors
+///
+/// This function may return an `anyhow::Error` in the following situations:
+///
+/// - If the file specified by `filename` does not exist or cannot be opened.
+/// - If there are issues reading the file content, such as permission or encoding errors.
+///
+/// # Note
+///
+/// The function expects the file's content to be valid UTF-8. If the file contains non-UTF-8 data, you may need to handle decoding errors or use a different approach to read the file.
 pub fn read_file_lines(filename: impl AsRef<Path>) -> Result<Vec<String>, anyhow::Error> {
     let f = File::open(filename)?;
     let reader = BufReader::new(f);
