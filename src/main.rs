@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, process};
 
 use clap::{arg, ArgGroup};
 use log::error;
@@ -35,7 +35,7 @@ fn main() {
         filename
     } else {
         error!("Something has gone terribly wrong and the infile name couldn't be read");
-        std::process::exit(1);
+        process::exit(1);
     };
 
     // TODO: extract these into functions
@@ -45,7 +45,7 @@ fn main() {
             Err(e) => {
                 // Error, log the message and exit the program with an 1
                 error!("Could not read file: {}", e);
-                std::process::exit(1);
+                process::exit(1);
             }
         };
 
@@ -54,7 +54,7 @@ fn main() {
             Err(e) => {
                 // Error, log the message and exit the program with an 1
                 error!("Could not decompile 8Xp file: {}", e);
-                std::process::exit(1);
+                process::exit(1);
             }
         };
 
@@ -64,7 +64,7 @@ fn main() {
             None => {
                 // If no output file is specified, print to stdout and exit
                 println!("{}", ti_file_string);
-                std::process::exit(0);
+                process::exit(0);
             }
         };
 
@@ -73,7 +73,7 @@ fn main() {
             Ok(_) => (),
             Err(e) => {
                 error!("Unable to write file: {}", e);
-                std::process::exit(1);
+                process::exit(1);
             }
         }
     } else if matches.contains_id("compile") {
@@ -81,7 +81,7 @@ fn main() {
             Ok(v) => v,
             Err(e) => {
                 error!("Could not read file: {}", e);
-                std::process::exit(1);
+                process::exit(1);
             }
         };
 
@@ -89,13 +89,13 @@ fn main() {
             Some(v) => {
                 if !v.chars().all(|c| c.is_ascii_alphabetic()) {
                     error!("Name argument is not ASCII Alphabetic.");
-                    std::process::exit(1);
+                    process::exit(1);
                 }
                 v
             }
             None => {
                 error!("Name argument was not provided.");
-                std::process::exit(1);
+                process::exit(1);
             }
         };
 
@@ -104,7 +104,7 @@ fn main() {
             Ok(v) => v,
             Err(e) => {
                 error!("Error when compiling: {}", e);
-                std::process::exit(1);
+                process::exit(1);
             }
         };
 
@@ -112,7 +112,7 @@ fn main() {
             Ok((h, f)) => (h, f),
             Err(e) => {
                 error!("Error when compiling: {}", e);
-                std::process::exit(1);
+                process::exit(1);
             }
         };
 
@@ -122,7 +122,13 @@ fn main() {
             footer: footer.to_vec(),
         };
 
-        println!("{:?}", ti_file.write_to_file());
+        match ti_file.write_to_file() {
+            Ok(_) => (),
+            Err(e) => {
+                error!("Error when writing to file: {}", e);
+                process::exit(1);
+            },
+        };
     } else if matches.contains_id("run") {
     }
 
@@ -133,7 +139,7 @@ fn main() {
     //         Err(e) => {
     //             // Error, log the message and exit the program with an 1
     //             error!("Could not convert string to UTF-8: {}", e);
-    //             std::process::exit(1);
+    //             process::exit(1);
     //         }
     //     }
     // } else {
@@ -143,7 +149,7 @@ fn main() {
     //     Err(e) => {
     //         // Error, log the message and exit the program with an 1
     //         error!("Could not decompile 8Xp file: {}", e);
-    //         std::process::exit(1);
+    //         process::exit(1);
     //     }
     // }
     // };
@@ -162,7 +168,7 @@ fn main() {
     //         Ok(v) => v,
     //         Err(e) => {
     //             error!("Error when compiling: {}", e);
-    //             std::process::exit(1);
+    //             process::exit(1);
     //         }
     //     };
 
@@ -170,7 +176,7 @@ fn main() {
     //         Ok((h, f)) => (h, f),
     //         Err(e) => {
     //             error!("Error when compiling: {}", e);
-    //             std::process::exit(1);
+    //             process::exit(1);
     //         }
     //     };
 
