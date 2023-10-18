@@ -5,4 +5,6 @@ pub mod translation {
     pub mod tokens;
 }
 
+pub mod errors;
+pub mod interpreter;
 pub mod utils;

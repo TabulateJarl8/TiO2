@@ -3,6 +3,7 @@ use std::{fs, process};
 use clap::{arg, ArgGroup};
 use log::error;
 use tio2::{
+    interpreter,
     translation::{common::TIFile, compile, decompile},
     utils,
 };
@@ -127,9 +128,20 @@ fn main() {
             Err(e) => {
                 error!("Error when writing to file: {}", e);
                 process::exit(1);
-            },
+            }
         };
     } else if matches.contains_id("run") {
+        let file_data = match utils::read_file_bytes(filename) {
+            Ok(v) => v, // Success, store the file data
+            Err(e) => {
+                // Error, log the message and exit the program with an 1
+                error!("Could not read file: {}", e);
+                process::exit(1);
+            }
+        };
+
+        let bytecode = interpreter::Interpreter::new(file_data);
+        println!("{:?}", bytecode);
     }
 
     // // Check if the file data is valid UTF-8 or not
