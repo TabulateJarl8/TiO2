@@ -1,18 +1,19 @@
 use crate::errors;
 
 /// Represents a label in the TI-BASIC bytecode format.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Lbl {
     /// The NULL byte padded hex name of the label
     pub name: [u8; 2],
-    /// The memory address of the instruction after the '\n' after the Lbl name
+    /// The memory address of the instruction after the `\n` after the Lbl name
+    ///
     /// WARNING: this can be out of bounds of the array length, so we need to check when
     /// accessing it
     pub skip_to_memory_position: usize,
 }
 
 /// The TI-BASIC bytecode interpreter. Hold information such the instruction stack, Lbl positions, etc.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Interpreter {
     /// The list of bytes for a given TI-BASIC program
     pub bytes: Vec<u8>,
@@ -94,6 +95,8 @@ impl Interpreter {
 
 /// Searches for labels within a list of bytes and returns them as a result.
 ///
+/// Mainly used internally, but can be used in other scenarios if needed.
+///
 /// # Arguments
 ///
 /// * `bytes_list` - A reference to a vector of bytes representing the custom bytecode.
@@ -101,7 +104,19 @@ impl Interpreter {
 /// # Returns
 ///
 /// A `Result` containing a vector of `Lbl` if labels are found, or an error if any issues occur.
-fn find_labels(bytes_list: &Vec<u8>) -> Result<Vec<Lbl>, anyhow::Error> {
+///
+/// # Example
+///
+/// ```
+/// use tio2::interpreter::{Interpreter, Lbl};
+///
+/// // Basic infinite loop program
+/// let bytecode = vec![0xd6, 0x41, 0x3f, 0xde, 0x2a, 0x41, 0x2a, 0x3f, 0xd7, 0x41];
+/// let interpreter = Interpreter::new(&bytecode).unwrap();
+///
+/// assert_eq!(interpreter.labels, vec![Lbl { name: [65, 0], skip_to_memory_position: 3 }]);
+/// ```
+pub fn find_labels(bytes_list: &Vec<u8>) -> Result<Vec<Lbl>, anyhow::Error> {
     let lbl_addresses: Vec<usize> = bytes_list
         .iter()
         .enumerate()
