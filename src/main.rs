@@ -140,7 +140,7 @@ fn main() {
             }
         };
 
-        let bytecode = interpreter::Interpreter::new(file_data);
+        let bytecode = interpreter::Interpreter::new(&file_data);
         println!("{:?}", bytecode);
     }
 
