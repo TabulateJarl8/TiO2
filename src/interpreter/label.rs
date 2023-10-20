@@ -87,7 +87,7 @@ pub fn find_labels(bytes_list: &Vec<u8>) -> Result<Vec<Lbl>, anyhow::Error> {
 /// A `Result` containing a fixed-size array of two bytes representing the label name, or an error
 /// if the label name cannot be extracted. If the label name is one byte long, this list will be
 /// NULL padded.
-/// 
+///
 ///
 /// # Errors
 ///

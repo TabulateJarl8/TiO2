@@ -13,6 +13,11 @@ pub const ALPHANUMERIC_RANGE: [u8; 37] = [
     0x57, 0x58, 0x59, 0x5a, 0x5b,
 ];
 
+/// Some tokens are two bytes long. The first byte of these tokens will be one of the bytes in this array.
+pub const DOUBLE_BYTE_TOKEN_IDENT: [u8; 11] = [
+    0x5C, 0x5D, 0x5E, 0x60, 0x61, 0x62, 0x63, 0xAA, 0xBB, 0xEF, 0x7E,
+];
+
 /// Reads the contents of a file and returns them as a vector of bytes.
 ///
 /// # Arguments

@@ -1,4 +1,9 @@
-use crate::translation::common::TIFile;
+use std::collections::VecDeque;
+
+use crate::{
+    translation::{common::TIFile, tokens::Byte},
+    utils,
+};
 
 use self::label::{find_labels, Lbl};
 
@@ -13,6 +18,7 @@ pub struct Interpreter {
     pub labels: Vec<Lbl>,
     /// The pointer to the current address in the bytes memory
     pub bytes_pointer: usize,
+    pub argument_stack: VecDeque<Vec<u8>>,
 }
 
 impl Interpreter {
@@ -82,10 +88,47 @@ impl Interpreter {
             bytes: ti_program.data.to_vec(),
             labels,
             bytes_pointer: 0,
+            argument_stack: VecDeque::new(),
         })
     }
 
-    pub fn interpret_bytes(&mut self) {}
+    pub fn interpret_bytes(&mut self) {
+        while self.bytes_pointer < self.bytes.len() {
+            self.interpret_byte_at_pointer();
+        }
+    }
 
-    pub fn interpret_next_byte(&mut self) {}
+    pub fn interpret_byte_at_pointer(&mut self) -> Result<(), anyhow::Error> {
+        let current_byte = match self.bytes.get(self.bytes_pointer) {
+            Some(&byte) => {
+                // check if the current byte is a double byte token
+                if utils::DOUBLE_BYTE_TOKEN_IDENT.contains(&byte) {
+                    // try to match the second byte in the pattern
+                    match self.bytes.get(self.bytes_pointer + 1) {
+                        Some(&byte2) => Byte::Double([byte, byte2]),
+                        None => return Err(anyhow::Error::msg(format!(
+                            "Expected a double byte token at 0x{:x?}, but encountered end of file.",
+                            byte
+                        ))),
+                    }
+                } else {
+                    Byte::Single(byte)
+                }
+            }
+            None => return Err(anyhow::Error::msg("The bytes pointer is out of range.")),
+        };
+
+        match current_byte {
+            Byte::Single(byte) => {
+                // TODO: create list of things that take arguments
+
+                self.bytes_pointer += 1;
+            },
+            Byte::Double(byte) => {
+                self.bytes_pointer += 2;
+            },
+        }
+
+        Ok(())
+    }
 }
