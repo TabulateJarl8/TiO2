@@ -145,7 +145,7 @@ fn main() {
             Err(e) => {
                 error!("Could not parse binary data: {}", e);
                 process::exit(1);
-            },
+            }
         };
 
         let bytecode = interpreter::Interpreter::new(&ti_program);

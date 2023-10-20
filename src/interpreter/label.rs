@@ -73,10 +73,67 @@ pub fn find_labels(bytes_list: &Vec<u8>) -> Result<Vec<Lbl>, anyhow::Error> {
     Ok(lbl_map)
 }
 
+/// Retrieves the label name from TI-BASIC bytecode at the specified memory address.
+///
+/// The label name is expected to follow a `Lbl` or `Goto` token in the bytecode.
+///
+/// # Arguments
+///
+/// * `bytes_list` - A reference to a vector of bytes representing the TI-BASIC bytecode. This should be the data section, not the header or footer.
+/// * `lbl_memory_address` - The memory address where the `Lbl` or `Goto` token is expected to be found. This is not where the label name starts.
+///
+/// # Returns``
+///
+/// A `Result` containing a fixed-size array of two bytes representing the label name, or an error
+/// if the label name cannot be extracted. If the label name is one byte long, this list will be
+/// NULL padded.
+/// 
+///
+/// # Errors
+///
+/// This function can return an error if it encounters unexpected bytes while parsing the label name.
+///
+/// # Example
+///
+/// ```
+/// use tio2::interpreter::label::get_label_name;
+///
+/// // Simple test program that defined Lbl A and then displays "A"
+/// let bytecode = vec![0xd6, 0x41, 0x3f, 0xde, 0x2a, 0x41, 0x2a];
+///
+/// // Extract the label name at memory address 0 (the `Lbl` token).
+/// let label_name = get_label_name(&bytecode, 0).unwrap();
+///
+/// assert_eq!(label_name, [0x41, 0x0]);
+/// ```
+///
+/// # Note
+///
+/// This function assumes that label names in the bytecode consist of two bytes, where the second
+/// byte can be 0x00 to indicate the end of the label name.
 pub fn get_label_name(
     bytes_list: &Vec<u8>,
     lbl_memory_address: usize,
 ) -> Result<[u8; 2], anyhow::Error> {
+    // test that lbl_memory_address is in range
+    let token_at_address = match bytes_list.get(lbl_memory_address) {
+        Some(&v) => v,
+        None => {
+            return Err(anyhow::Error::msg(format!(
+                "Index {} out of range. Bytes list is {} bytes long",
+                lbl_memory_address,
+                bytes_list.len()
+            )))
+        }
+    };
+    // test that the given memory address is for a Lbl or Goto token
+    if ![0xD6, 0xD7].contains(&token_at_address) {
+        return Err(anyhow::Error::msg(format!(
+            "Token `0x{:x?}` is not Lbl (0xD6) or Goto (0xD7)",
+            token_at_address
+        )));
+    }
+
     // how many bytes to skip when reading label. minimum of one. doesn't include the Lbl byte itself
     let token1 = match bytes_list.get(lbl_memory_address + 1) {
         Some(&token) => {
