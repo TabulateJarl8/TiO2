@@ -140,7 +140,15 @@ fn main() {
             }
         };
 
-        let bytecode = interpreter::Interpreter::new(&file_data);
+        let ti_program = match decompile::read_binary_data(file_data) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Could not parse binary data: {}", e);
+                process::exit(1);
+            },
+        };
+
+        let bytecode = interpreter::Interpreter::new(&ti_program);
         println!("{:?}", bytecode);
     }
 

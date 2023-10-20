@@ -1,6 +1,6 @@
 //! This file contains structs and functions used for handling the Lbl token.
 
-use crate::{utils, errors};
+use crate::{errors, utils};
 
 /// Represents a label in the TI-BASIC bytecode format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

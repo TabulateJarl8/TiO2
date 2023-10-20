@@ -1,4 +1,6 @@
-use self::label::{Lbl, find_labels};
+use crate::translation::common::TIFile;
+
+use self::label::{find_labels, Lbl};
 
 pub mod label;
 
@@ -21,8 +23,8 @@ impl Interpreter {
     ///
     /// # Arguments
     ///
-    /// * `data_bytes` - A vector of data bytes representing the custom TI-BASIC bytecode. This is
-    /// not header or footer data, just the main body data bytes.
+    /// * `ti_program` - A TIFile object that will be read. Technically, it does not need to have
+    /// a valid header or footer, just a valid data bytes section.
     ///
     /// # Returns
     ///
@@ -31,17 +33,22 @@ impl Interpreter {
     /// # Example
     ///
     /// ```
-    /// use tio2::interpreter::Interpreter;
+    /// use tio2::{translation::common::TIFile, interpreter::Interpreter};
     ///
     /// // Basic hello world program
-    /// let bytecode = vec![0xde, 0x2a, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 0x2a];
-    /// let interpreter_result = Interpreter::new(&bytecode);
+    /// // The header and footer do not matter when interpreting
+    /// let ti_program = TIFile {
+    ///     header: [0; 74],
+    ///     data: vec![0xde, 0x2a, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 0x2a],
+    ///     footer: vec![],
+    /// };
+    /// let interpreter_result = Interpreter::new(&ti_program);
     ///
     /// match interpreter_result {
     ///     Ok(interpreter) => {
     ///         // Successfully created an interpreter.
     ///         // You can now use it to interpret TI-BASIC bytecode.
-    ///         assert_eq!(interpreter.bytes, bytecode);
+    ///         assert_eq!(interpreter.bytes, ti_program.data);
     ///     },
     ///     Err(err) => {
     ///         eprintln!("Failed to create the interpreter: {}", err);
@@ -69,10 +76,10 @@ impl Interpreter {
     ///
     /// This function does not perform actual bytecode interpretation. It focuses on the setup and preparation
     /// of the `Interpreter` for bytecode execution.
-    pub fn new(data_bytes: &Vec<u8>) -> Result<Self, anyhow::Error> {
-        let labels = find_labels(data_bytes)?;
+    pub fn new(ti_program: &TIFile) -> Result<Self, anyhow::Error> {
+        let labels = find_labels(&ti_program.data)?;
         Ok(Self {
-            bytes: data_bytes.to_vec(),
+            bytes: ti_program.data.to_vec(),
             labels,
             bytes_pointer: 0,
         })
@@ -82,4 +89,3 @@ impl Interpreter {
 
     pub fn interpret_next_byte(&mut self) {}
 }
-
