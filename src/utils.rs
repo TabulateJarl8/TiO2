@@ -18,6 +18,82 @@ pub const DOUBLE_BYTE_TOKEN_IDENT: [u8; 11] = [
     0x5C, 0x5D, 0x5E, 0x60, 0x61, 0x62, 0x63, 0xAA, 0xBB, 0xEF, 0x7E,
 ];
 
+/// Simple functions which have comma-delimited arguments following them.
+/// These functions are followed by a space instead of an opening parenthesis, 
+/// such as `Disp `, `ClrList `, etc.
+pub const SIMPLE_FUNCTIONS: [u8; 35] = [
+    // CubicReg
+    0x2E,
+    // QuartReg
+    0x2F,
+    // Fix
+    0x73,
+    // FnOn
+    0x96,
+    // FnOff
+    0x97,
+    // StorePic
+    0x98,
+    // RecallPic
+    0x99,
+    // StoreGDB
+    0x9A,
+    // RecallGDB
+    0x9B,
+    // Vertical
+    0x9D,
+    // Horizontal
+    0xA6,
+    // DrawnInv
+    0xA8,
+    // DrawF
+    0xA9,
+    // If
+    0xCE,
+    // While
+    0xD1,
+    // Repeat
+    0xD2,
+    // For
+    0xD3,
+    // Lbl
+    0xD6,
+    // Goto
+    0xD7,
+    // Pause
+    0xD8,
+    // Input
+    0xDC,
+    // Prompt
+    0xDD,
+    // Disp
+    0xDE,
+    // PlotsOn
+    0xE9,
+    // PlotsOff
+    0xEA,
+    // 1-Var Stats
+    0xF2,
+    // 2-Var Stats
+    0xF3,
+    // LinReg(a+bx)
+    0xF4,
+    // ExpReg
+    0xF5,
+    // LnReg
+    0xF6,
+    // PwrReg
+    0xF7,
+    // Med-Med
+    0xF8,
+    // QuadReg
+    0xF9,
+    // ClrList
+    0xFA,
+    // LinReg(ax+b)
+    0xFF,
+];
+
 /// Reads the contents of a file and returns them as a vector of bytes.
 ///
 /// # Arguments
