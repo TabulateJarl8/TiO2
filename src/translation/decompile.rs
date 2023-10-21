@@ -96,14 +96,14 @@ pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
                 if let Some(double_token) =
                     tokens.get(&Byte::Double([curr_byte, ti_data.data[byte_num + 1]]))
                 {
-                    plaintext.push_str(double_token);
+                    plaintext.push_str(double_token.as_ref());
                     byte_num += 2;
                 } else {
-                    plaintext.push_str(single_token);
+                    plaintext.push_str(single_token.as_ref());
                     byte_num += 1;
                 }
             } else {
-                plaintext.push_str(single_token);
+                plaintext.push_str(single_token.as_ref());
                 byte_num += 1;
             }
         } else if byte_num + 1 < ti_data.data.len() {
@@ -112,7 +112,7 @@ pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
             // spit out an error but do the rest.
             match tokens.get(&Byte::Double([curr_byte, ti_data.data[byte_num + 1]])) {
                 Some(token) => {
-                    plaintext.push_str(token);
+                    plaintext.push_str(token.as_ref());
                     byte_num += 2;
                 }
                 None => {

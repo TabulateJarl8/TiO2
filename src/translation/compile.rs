@@ -4,7 +4,7 @@ use crate::utils::copy_into_index;
 
 use super::{
     common::FILE_HEADER,
-    tokens::{get_inverse_tokens, Byte},
+    tokens::{get_inverse_tokens_as_str, Byte},
 };
 
 /// Calculate the bytes and carry bit for a given size.
@@ -172,7 +172,7 @@ pub fn create_metadata(
 pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::Error> {
     let program_string = file_contents.join("\n").replace('→', "->");
 
-    let tokens = get_inverse_tokens();
+    let tokens = get_inverse_tokens_as_str();
 
     // keep track of when we're in strings for parsing
     let mut in_string = false;
