@@ -37,7 +37,6 @@ impl AsRef<str> for TokenType {
     }
 }
 
-
 /// A utility function that returns the inverse mapping of byte tokens.
 /// Used when compiling instead of decompiling.
 ///
@@ -87,17 +86,17 @@ pub enum Byte {
 }
 
 lazy_static! {
-    /// Provides a `HashMap` of byte tokens where the key is a [`Byte`] and the value is a `&'static str`.
+    /// Provides a `HashMap` of byte tokens where the key is a [`Byte`] and the value is a `TokenType`.
     ///
     /// This hash map contains mappings for byte tokens used in TI-8XP files.
     ///
     /// # Example
     ///
     /// ```
-    /// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
+    /// use tio2::translation::tokens::{BYTE_TOKENS, Byte, TokenType};
     ///
     /// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
-    ///     assert_eq!(token, &">DMS");
+    ///     assert_eq!(token, &TokenType::LHSFunction(">DMS"));
     /// }
     /// ```
     pub static ref BYTE_TOKENS: HashMap<Byte, TokenType> = [

@@ -1,7 +1,10 @@
 use std::collections::VecDeque;
 
 use crate::{
-    translation::{common::TIFile, tokens::Byte},
+    translation::{
+        common::TIFile,
+        tokens::{Byte, TokenType, BYTE_TOKENS},
+    },
     utils,
 };
 
@@ -18,7 +21,7 @@ pub struct Interpreter {
     pub labels: Vec<Lbl>,
     /// The pointer to the current address in the bytes memory
     pub bytes_pointer: usize,
-    pub argument_stack: VecDeque<Vec<u8>>,
+    pub argument_stack: Vec<String>,
 }
 
 impl Interpreter {
@@ -88,14 +91,16 @@ impl Interpreter {
             bytes: ti_program.data.to_vec(),
             labels,
             bytes_pointer: 0,
-            argument_stack: VecDeque::new(),
+            argument_stack: Vec::new(),
         })
     }
 
-    pub fn interpret_bytes(&mut self) {
+    pub fn interpret_bytes(&mut self) -> Result<(), anyhow::Error> {
         while self.bytes_pointer < self.bytes.len() {
-            self.interpret_byte_at_pointer();
+            self.interpret_byte_at_pointer()?;
         }
+
+        Ok(())
     }
 
     pub fn interpret_byte_at_pointer(&mut self) -> Result<(), anyhow::Error> {
@@ -106,10 +111,12 @@ impl Interpreter {
                     // try to match the second byte in the pattern
                     match self.bytes.get(self.bytes_pointer + 1) {
                         Some(&byte2) => Byte::Double([byte, byte2]),
-                        None => return Err(anyhow::Error::msg(format!(
+                        None => {
+                            return Err(anyhow::Error::msg(format!(
                             "Expected a double byte token at 0x{:x?}, but encountered end of file.",
                             byte
-                        ))),
+                        )))
+                        }
                     }
                 } else {
                     Byte::Single(byte)
@@ -118,15 +125,44 @@ impl Interpreter {
             None => return Err(anyhow::Error::msg("The bytes pointer is out of range.")),
         };
 
+        let instruction = match BYTE_TOKENS.get(&current_byte) {
+            Some(&v) => v,
+            None => {
+                return Err(anyhow::Error::msg(format!(
+                    "Invalid token: {:x?}",
+                    current_byte
+                )))
+            }
+        };
+
+        // TODO: none of this works
+        match instruction {
+            TokenType::RHSFunction(f)
+            | TokenType::LHSFunction(f)
+            | TokenType::NoArgsFunction(f)
+            | TokenType::BothSidesFunction(f)
+            | TokenType::Conditional(f) => self.argument_stack.push(f.to_string()),
+            TokenType::Token(t) => match self.argument_stack.last_mut() {
+                Some(item) => {
+                    if *item == String::from(",") {
+                        self.argument_stack.push(t.to_string())
+                    } else if *item == String::from("\n") {
+                        self.argument_stack.push(String::new())
+                    } else {
+                        item.push_str(t)
+                    }
+                }
+                None => self.argument_stack.push(t.to_string()),
+            },
+        }
+
         match current_byte {
             Byte::Single(byte) => {
-                // TODO: create list of things that take arguments
-
                 self.bytes_pointer += 1;
-            },
+            }
             Byte::Double(byte) => {
                 self.bytes_pointer += 2;
-            },
+            }
         }
 
         Ok(())
