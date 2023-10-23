@@ -100,6 +100,9 @@ impl Interpreter {
             self.interpret_byte_at_pointer()?;
         }
 
+        // clear out empty list elements
+        self.argument_stack.retain(|x| !x.is_empty());
+
         Ok(())
     }
 
@@ -135,18 +138,25 @@ impl Interpreter {
             }
         };
 
-        // TODO: none of this works
+        let mut in_string = false;
         match instruction {
             TokenType::RHSFunction(f)
             | TokenType::LHSFunction(f)
             | TokenType::NoArgsFunction(f)
             | TokenType::BothSidesFunction(f)
-            | TokenType::Conditional(f) => self.argument_stack.push(f.to_string()),
+            | TokenType::Conditional(f) => {
+                self.argument_stack.push(f.to_string());
+                self.argument_stack.push(String::new());
+            },
             TokenType::Token(t) => match self.argument_stack.last_mut() {
                 Some(item) => {
-                    if *item == String::from(",") {
-                        self.argument_stack.push(t.to_string())
-                    } else if *item == String::from("\n") {
+                    if t == "\"" {
+                        in_string = !in_string;
+                    }
+                    
+                    if t == "," && !in_string {
+                        self.argument_stack.push(String::new());
+                    } else if t == "\n" {
                         self.argument_stack.push(String::new())
                     } else {
                         item.push_str(t)
@@ -157,10 +167,10 @@ impl Interpreter {
         }
 
         match current_byte {
-            Byte::Single(byte) => {
+            Byte::Single(_) => {
                 self.bytes_pointer += 1;
             }
-            Byte::Double(byte) => {
+            Byte::Double(_) => {
                 self.bytes_pointer += 2;
             }
         }
