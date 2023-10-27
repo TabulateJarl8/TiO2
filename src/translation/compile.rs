@@ -9,7 +9,7 @@ use super::{
 
 /// Calculate the bytes and carry bit for a given size.
 ///
-/// The maximum filesize is 255*255. Since one byte can only hold 255, we have a size followed by a carry byte.
+/// Since one byte can only hold 255, we have a size followed by a carry byte.
 ///
 /// # Arguments
 ///
@@ -22,6 +22,16 @@ use super::{
 /// # Errors
 ///
 /// Returns an error if the provided size exceeds the absolute limit.
+///
+/// # Example
+/// ```
+/// use tio2::translation::compile::int_to_bytes;
+///
+/// let big_number = 12345;
+/// let bytes = int_to_bytes(big_number).expect("Unable to convert to bytes");
+///
+/// assert_eq!(bytes, [57, 48]);
+/// ```
 pub fn int_to_bytes(size: usize) -> Result<[u8; 2], anyhow::Error> {
     let mut bytes: [u8; 2] = [0; 2];
 
@@ -51,6 +61,27 @@ pub fn int_to_bytes(size: usize) -> Result<[u8; 2], anyhow::Error> {
 /// # Errors
 ///
 /// Returns an error if the header length is incorrect.
+///
+/// # Example
+/// ```
+/// use tio2::translation::compile::create_metadata;
+///
+/// // Simple progrma to display HELLO
+/// let program_data = vec![0xDE, 0x2A, 0x48, 0x45, 0x4C, 0x4C, 0x4F, 0x2A];
+/// let metadata = create_metadata(&program_data, "HI").expect("Unable to create metadata");
+/// // First item is the header
+/// assert_eq!(
+///     metadata.0,
+///     [
+///         42, 42, 84, 73, 56, 51, 70, 42, 26, 10, 0, 70, 105, 108, 101, 32, 99, 111, 109, 112,
+///         105, 108, 101, 100, 32, 98, 121, 32, 84, 105, 79, 50, 32, 102, 114, 111, 109, 32, 84,
+///         97, 98, 117, 108, 97, 116, 101, 74, 97, 114, 108, 56, 0, 0, 27, 0, 13, 0, 10, 0, 5, 72,
+///         73, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 8, 0
+///     ]
+/// );
+/// // Second item is the footer (checksum)
+/// assert_eq!(metadata.1, [101, 3]);
+/// ```
 pub fn create_metadata(
     ti_basic_data: &Vec<u8>,
     program_name: &str,
@@ -166,7 +197,13 @@ pub fn create_metadata(
 /// ```
 /// use tio2::translation::compile::compile_to_bytecode;
 ///
-/// todo!();
+/// let program = vec!["Lbl A", "Disp \"HELLO\"", "Goto A"];
+///
+/// let result = compile_to_bytecode(program).expect("Unable to compile to bytecode");
+/// assert_eq!(
+///     result,
+///     [0xD6, 0x41, 0x3F, 0xDE, 0x2A, 0x48, 0x45, 0x4C, 0x4C, 0x4F, 0x2A, 0x3F, 0xD7, 0x41]
+/// );
 /// ```
 pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::Error> {
     let program_string = file_contents.join("\n").replace('→', "->");
