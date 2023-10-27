@@ -19,7 +19,8 @@ pub struct Interpreter {
     pub labels: Vec<Lbl>,
     /// The pointer to the current address in the bytes memory
     pub bytes_pointer: usize,
-    pub argument_stack: Vec<String>,
+    pub argument_stack: Vec<TokenType>,
+    pub current_token_consumer: String,
 }
 
 impl Interpreter {
@@ -90,6 +91,7 @@ impl Interpreter {
             labels,
             bytes_pointer: 0,
             argument_stack: Vec::new(),
+            current_token_consumer: String::new(),
         })
     }
 
@@ -97,6 +99,10 @@ impl Interpreter {
         while self.bytes_pointer < self.bytes.len() {
             self.interpret_byte_at_pointer()?;
         }
+
+        // push remaining tokens onto stack if there are any
+        self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+        self.current_token_consumer.clear();
 
         // clear out empty list elements
         self.argument_stack.retain(|x| !x.is_empty());
@@ -127,7 +133,7 @@ impl Interpreter {
         };
 
         let instruction = match BYTE_TOKENS.get(&current_byte) {
-            Some(&v) => v,
+            Some(v) => v,
             None => {
                 return Err(anyhow::Error::msg(format!(
                     "Invalid token: {:x?}",
@@ -138,29 +144,29 @@ impl Interpreter {
 
         let mut in_string = false;
         match instruction {
-            TokenType::RHSFunction(f)
-            | TokenType::LHSFunction(f)
-            | TokenType::NoArgsFunction(f)
-            | TokenType::BothSidesFunction(f)
-            | TokenType::Conditional(f) => {
-                self.argument_stack.push(f.to_string());
-                self.argument_stack.push(String::new());
+            TokenType::RHSFunction(_)
+            | TokenType::LHSFunction(_)
+            | TokenType::NoArgsFunction(_)
+            | TokenType::BothSidesFunction(_)
+            | TokenType::Conditional(_) => {
+                self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+                self.current_token_consumer.clear();
+                self.argument_stack.push(instruction.clone());
             },
-            TokenType::Token(t) => match self.argument_stack.last_mut() {
-                Some(item) => {
-                    if t == "\"" {
-                        in_string = !in_string;
-                    }
-                    
-                    if t == "," && !in_string {
-                        self.argument_stack.push(String::new());
-                    } else if t == "\n" {
-                        self.argument_stack.push(String::new())
-                    } else {
-                        item.push_str(t)
-                    }
+            TokenType::Token(t) => {
+                if t == "\"" {
+                    in_string = !in_string;
                 }
-                None => self.argument_stack.push(t.to_string()),
+                
+                if t == "," && !in_string {
+                    self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+                    self.current_token_consumer.clear();
+                } else if t == "\n" {
+                    self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+                    self.current_token_consumer.clear();
+                } else {
+                    self.current_token_consumer.push_str(&t);
+                }
             },
         }
 
