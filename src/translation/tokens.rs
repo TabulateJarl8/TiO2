@@ -58,11 +58,11 @@ impl TokenType {
 /// # Examples
 ///
 /// ```
-/// use tio2::translation::tokens::{get_inverse_tokens, BYTE_TOKENS, Byte};
+/// use tio2::translation::tokens::{get_inverse_tokens_as_str, Byte, TokenType, BYTE_TOKENS};
 ///
-/// let inverse_tokens = get_inverse_tokens();
-/// let token = ">DMS";
-/// if let Some(byte) = inverse_tokens.get(token) {
+/// let inverse_tokens = get_inverse_tokens_as_str();
+/// let token = TokenType::LHSFunction(">DMS");
+/// if let Some(byte) = inverse_tokens.get(">DMS") {
 ///     assert_eq!(&token, BYTE_TOKENS.get(byte).unwrap());
 /// }
 /// ```
@@ -85,7 +85,7 @@ pub fn get_inverse_tokens_as_str() -> HashMap<&'static str, Byte> {
 /// # Examples
 ///
 /// ```
-/// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
+/// use tio2::translation::tokens::{Byte, BYTE_TOKENS};
 ///
 /// // Access the token for a double byte (e.g., [0x60, 0x00])
 /// if let Some(token) = BYTE_TOKENS.get(&Byte::Double([0x60, 0x00])) {

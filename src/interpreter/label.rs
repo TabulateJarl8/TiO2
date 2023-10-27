@@ -29,13 +29,26 @@ pub struct Lbl {
 /// # Example
 ///
 /// ```
-/// use tio2::interpreter::{Interpreter, Lbl};
+/// use tio2::{
+///     interpreter::{label::Lbl, Interpreter},
+///     translation::common::TIFile,
+/// };
 ///
 /// // Basic infinite loop program
-/// let bytecode = vec![0xd6, 0x41, 0x3f, 0xde, 0x2a, 0x41, 0x2a, 0x3f, 0xd7, 0x41];
+/// let bytecode = TIFile {
+///     header: [0; 74],
+///     data: vec![0xd6, 0x41, 0x3f, 0xde, 0x2a, 0x41, 0x2a, 0x3f, 0xd7, 0x41],
+///     footer: vec![],
+/// };
 /// let interpreter = Interpreter::new(&bytecode).unwrap();
 ///
-/// assert_eq!(interpreter.labels, vec![Lbl { name: [65, 0], skip_to_memory_position: 3 }]);
+/// assert_eq!(
+///     interpreter.labels,
+///     vec![Lbl {
+///         name: [65, 0],
+///         skip_to_memory_position: 3
+///     }]
+/// );
 /// ```
 pub fn find_labels(bytes_list: &Vec<u8>) -> Result<Vec<Lbl>, anyhow::Error> {
     let lbl_addresses: Vec<usize> = bytes_list

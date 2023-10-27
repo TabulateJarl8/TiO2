@@ -43,7 +43,6 @@ impl TIFile {
     ///
     /// A `Result` containing the program name as a `String` if successful, or a
     /// `std::string::FromUtf8Error` if the extraction fails.
-    ///
     pub fn extract_program_name(&self) -> Result<String, FromUtf8Error> {
         let result = String::from_utf8(self.header[60..68].to_vec())?;
 

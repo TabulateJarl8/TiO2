@@ -168,7 +168,6 @@ pub fn create_metadata(
 ///
 /// todo!();
 /// ```
-///
 pub fn compile_to_bytecode(file_contents: Vec<&str>) -> Result<Vec<u8>, anyhow::Error> {
     let program_string = file_contents.join("\n").replace('→', "->");
 

@@ -149,7 +149,7 @@ fn main() {
         };
 
         let mut bytecode = interpreter::Interpreter::new(&ti_program).unwrap();
-        bytecode.interpret_bytes();
+        bytecode.parse_bytes();
         println!("{:?}", bytecode);
     }
 

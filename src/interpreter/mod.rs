@@ -19,7 +19,9 @@ pub struct Interpreter {
     pub labels: Vec<Lbl>,
     /// The pointer to the current address in the bytes memory
     pub bytes_pointer: usize,
-    pub argument_stack: Vec<TokenType>,
+    /// The stack of the parsed instructions
+    pub instruction_stack: Vec<TokenType>,
+    /// A buffer string for consuming tokens
     pub current_token_consumer: String,
 }
 
@@ -41,7 +43,7 @@ impl Interpreter {
     /// # Example
     ///
     /// ```
-    /// use tio2::{translation::common::TIFile, interpreter::Interpreter};
+    /// use tio2::{interpreter::Interpreter, translation::common::TIFile};
     ///
     /// // Basic hello world program
     /// // The header and footer do not matter when interpreting
@@ -57,11 +59,11 @@ impl Interpreter {
     ///         // Successfully created an interpreter.
     ///         // You can now use it to interpret TI-BASIC bytecode.
     ///         assert_eq!(interpreter.bytes, ti_program.data);
-    ///     },
+    ///     }
     ///     Err(err) => {
     ///         eprintln!("Failed to create the interpreter: {}", err);
     ///         assert!(false);
-    ///     },
+    ///     }
     /// }
     /// ```
     ///
@@ -90,27 +92,111 @@ impl Interpreter {
             bytes: ti_program.data.to_vec(),
             labels,
             bytes_pointer: 0,
-            argument_stack: Vec::new(),
+            instruction_stack: Vec::new(),
             current_token_consumer: String::new(),
         })
     }
 
-    pub fn interpret_bytes(&mut self) -> Result<(), anyhow::Error> {
+    /// Parses the TI-BASIC bytecode in the `bytes` field of the `Interpreter` and populates the `instruction_stack`.
+    ///
+    /// This function iterates over the bytecode, parsing and categorizing the tokens based on the byte values.
+    /// It recognizes various types of instructions, including RHS functions, LHS functions, functions with no arguments,
+    /// functions with arguments on both sides, and conditional instructions. The parsed tokens are pushed onto the
+    /// `instruction_stack`.
+    ///
+    /// # Errors
+    ///
+    /// If an unexpected byte value is encountered or if the bytecode is invalid, this function may return an error
+    /// describing the issue.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tio2::{
+    ///     interpreter::Interpreter,
+    ///     translation::{common::TIFile, tokens::TokenType},
+    /// };
+    ///
+    /// // Equal to `Disp "A"`
+    /// let ti_program = TIFile {
+    ///     header: [0; 74],
+    ///     data: vec![0xde, 0x2a, 0x41, 0x2a],
+    ///     footer: vec![],
+    /// };
+    /// let mut interpreter = Interpreter::new(&ti_program).expect("Failed to create interpreter");
+    /// interpreter.parse_bytes().expect("Failed to parse bytes");
+    /// // The instruction stack is now populated with parsed tokens.
+    /// assert_eq!(
+    ///     interpreter.instruction_stack,
+    ///     vec![
+    ///         TokenType::RHSFunction("Disp "),
+    ///         TokenType::Token("\"A\"".into())
+    ///     ],
+    /// );
+    /// ```
+    pub fn parse_bytes(&mut self) -> Result<(), anyhow::Error> {
         while self.bytes_pointer < self.bytes.len() {
-            self.interpret_byte_at_pointer()?;
+            self.parse_byte_at_pointer()?;
         }
 
         // push remaining tokens onto stack if there are any
-        self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+        self.instruction_stack
+            .push(TokenType::Token(self.current_token_consumer.clone()));
         self.current_token_consumer.clear();
 
         // clear out empty list elements
-        self.argument_stack.retain(|x| !x.is_empty());
+        self.instruction_stack.retain(|x| !x.is_empty());
 
         Ok(())
     }
 
-    pub fn interpret_byte_at_pointer(&mut self) -> Result<(), anyhow::Error> {
+    /// Parses the byte at the current `bytes_pointer` position and processes it based on the current parsing state.
+    ///
+    /// This function examines the byte at the current `bytes_pointer` position in the `bytes` field and processes it
+    /// based on the current parsing state. It handles various token types, including functions, tokens, and strings.
+    /// If a function or token has been fully consumed, it is added to the `instruction_stack`. If a token has not been
+    /// fully consumed, it is appended to the `current_token_consumer` for further processing.
+    ///
+    /// # Errors
+    ///
+    /// If an unexpected or invalid byte is encountered, this function may return an error describing the issue.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use tio2::{
+    ///     interpreter::Interpreter,
+    ///     translation::{common::TIFile, tokens::TokenType},
+    /// };
+    ///
+    /// // Equal to `Disp "A"`
+    /// let ti_program = TIFile {
+    ///     header: [0; 74],
+    ///     data: vec![0xde, 0x2a, 0x41, 0x2a],
+    ///     footer: vec![],
+    /// };
+    ///
+    /// let mut interpreter = Interpreter::new(&ti_program).expect("Failed to create interpreter");
+    /// interpreter
+    ///     .parse_byte_at_pointer()
+    ///     .expect("Failed to parse byte");
+    /// // The parsed token is either added to the instruction stack or the current token consumer,
+    /// // depending on whether it has been fully consumed.
+    /// assert_eq!(
+    ///     interpreter.instruction_stack.last().unwrap(),
+    ///     &TokenType::RHSFunction("Disp ")
+    /// );
+    ///
+    /// // parse the next 3 bytes
+    /// for _ in 0..3 {
+    ///     interpreter
+    ///         .parse_byte_at_pointer()
+    ///         .expect("Failed to parse byte");
+    /// }
+    ///
+    /// assert_eq!(interpreter.current_token_consumer, String::from("\"A\""));
+    /// ```
+    pub fn parse_byte_at_pointer(&mut self) -> Result<(), anyhow::Error> {
         let current_byte = match self.bytes.get(self.bytes_pointer) {
             Some(&byte) => {
                 // check if the current byte is a double byte token
@@ -149,25 +235,28 @@ impl Interpreter {
             | TokenType::NoArgsFunction(_)
             | TokenType::BothSidesFunction(_)
             | TokenType::Conditional(_) => {
-                self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+                self.instruction_stack
+                    .push(TokenType::Token(self.current_token_consumer.clone()));
                 self.current_token_consumer.clear();
-                self.argument_stack.push(instruction.clone());
-            },
+                self.instruction_stack.push(instruction.clone());
+            }
             TokenType::Token(t) => {
                 if t == "\"" {
                     in_string = !in_string;
                 }
-                
+
                 if t == "," && !in_string {
-                    self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+                    self.instruction_stack
+                        .push(TokenType::Token(self.current_token_consumer.clone()));
                     self.current_token_consumer.clear();
                 } else if t == "\n" {
-                    self.argument_stack.push(TokenType::Token(self.current_token_consumer.clone()));
+                    self.instruction_stack
+                        .push(TokenType::Token(self.current_token_consumer.clone()));
                     self.current_token_consumer.clear();
                 } else {
                     self.current_token_consumer.push_str(&t);
                 }
-            },
+            }
         }
 
         match current_byte {
