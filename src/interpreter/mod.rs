@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     translation::{
         common::TIFile,
@@ -23,6 +25,7 @@ pub struct Interpreter {
     pub instruction_stack: Vec<TokenType>,
     /// A buffer string for consuming tokens
     pub current_token_consumer: String,
+    // pub variables: HashMap<String>
 }
 
 impl Interpreter {
@@ -269,5 +272,31 @@ impl Interpreter {
         }
 
         Ok(())
+    }
+
+    pub fn interpret_bytes(&self, token_list: Option<&Vec<TokenType>>) {
+        let tokens = match token_list {
+            Some(v) => v,
+            None => &self.instruction_stack,
+        };
+
+        let mut i = 0;
+        while i < tokens.len() {
+            match tokens[i] {
+                TokenType::RHSFunction(func) => {
+
+                },
+                TokenType::LHSFunction(_) => todo!(),
+                TokenType::BothSidesFunction(_) => todo!(),
+                TokenType::NoArgsFunction(func) => {
+                    if func == "ClrHome" {
+                        print!("\x1B[2J");
+                    }
+                },
+                TokenType::Token(_) => todo!(),
+                TokenType::Conditional(_) => todo!(),
+            }
+            i += 1;
+        }
     }
 }
