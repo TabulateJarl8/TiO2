@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write};
 
 use crate::{
     translation::{
@@ -25,7 +25,7 @@ pub struct Interpreter {
     pub instruction_stack: Vec<TokenType>,
     /// A buffer string for consuming tokens
     pub current_token_consumer: String,
-    // pub variables: HashMap<String>
+    pub variables: HashMap<String, String>,
 }
 
 impl Interpreter {
@@ -97,6 +97,7 @@ impl Interpreter {
             bytes_pointer: 0,
             instruction_stack: Vec::new(),
             current_token_consumer: String::new(),
+            variables: HashMap::new(),
         })
     }
 
@@ -274,7 +275,7 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn interpret_bytes(&self, token_list: Option<&Vec<TokenType>>) {
+    pub fn interpret_bytes(&mut self, token_list: Option<&Vec<TokenType>>) {
         let tokens = match token_list {
             Some(v) => v,
             None => &self.instruction_stack,
@@ -284,13 +285,36 @@ impl Interpreter {
         while i < tokens.len() {
             match tokens[i] {
                 TokenType::RHSFunction(func) => {
-
+                    if func == "Input " {
+                        let prompt = match &tokens[i + 1] {
+                            TokenType::RHSFunction(_) => todo!(),
+                            TokenType::LHSFunction(_) => todo!(),
+                            TokenType::BothSidesFunction(_) => todo!(),
+                            TokenType::NoArgsFunction(_) => todo!(),
+                            TokenType::Token(v) => v.trim_matches('"'),
+                            TokenType::Conditional(_) => todo!(),
+                        };
+                        let variable = match &tokens[i + 2] {
+                            TokenType::RHSFunction(_) => todo!(),
+                            TokenType::LHSFunction(_) => todo!(),
+                            TokenType::BothSidesFunction(_) => todo!(),
+                            TokenType::NoArgsFunction(_) => todo!(),
+                            TokenType::Token(v) => v,
+                            TokenType::Conditional(_) => todo!(),
+                        };
+                        i += 2;
+                        let mut value = String::new();
+                        print!("{}", prompt);
+                        std::io::stdout().flush().unwrap();
+                        let b1 = std::io::stdin().read_line(&mut value).unwrap();
+                        self.variables.insert(variable.clone(), b1.to_string());
+                    }
                 },
                 TokenType::LHSFunction(_) => todo!(),
                 TokenType::BothSidesFunction(_) => todo!(),
                 TokenType::NoArgsFunction(func) => {
                     if func == "ClrHome" {
-                        print!("\x1B[2J");
+                        clearscreen::clear().expect("failed to clear screen");
                     }
                 },
                 TokenType::Token(_) => todo!(),

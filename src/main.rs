@@ -151,6 +151,7 @@ fn main() {
         let mut bytecode = interpreter::Interpreter::new(&ti_program).unwrap();
         bytecode.parse_bytes();
         println!("{:?}", bytecode);
+        bytecode.interpret_bytes(None);
     }
 
     // // Check if the file data is valid UTF-8 or not
