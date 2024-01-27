@@ -1,3 +1,6 @@
+//! The `compile` module provides functions for converting source code into TI-8XP bytecode programs
+//! for TI-84 Plus calculators. It includes functionality for calculating file size bytes, creating
+//! metadata headers and footers, and compiling source code into bytecode.
 use log::{debug, error};
 
 use crate::utils::copy_into_index;
@@ -17,22 +20,18 @@ use super::{
 ///
 /// # Returns
 ///
-/// A result containing an array of two u8 bytes representing the file size.
-///
-/// # Errors
-///
-/// Returns an error if the provided size exceeds the absolute limit.
+/// An array of two u8 bytes representing the file size.
 ///
 /// # Example
 /// ```
 /// use tio2::translation::compile::int_to_bytes;
 ///
 /// let big_number = 12345;
-/// let bytes = int_to_bytes(big_number).expect("Unable to convert to bytes");
+/// let bytes = int_to_bytes(big_number);
 ///
 /// assert_eq!(bytes, [57, 48]);
 /// ```
-pub fn int_to_bytes(size: usize) -> Result<[u8; 2], anyhow::Error> {
+pub fn int_to_bytes(size: usize) -> [u8; 2] {
     let mut bytes: [u8; 2] = [0; 2];
 
     // size byte
@@ -40,7 +39,7 @@ pub fn int_to_bytes(size: usize) -> Result<[u8; 2], anyhow::Error> {
     // carry byte
     bytes[1] = ((size >> 8) & 0xFF) as u8;
 
-    Ok(bytes)
+    bytes
 }
 
 /// Create a metadata header and footer for a TI-8XP program.
@@ -116,7 +115,7 @@ pub fn create_metadata(
     debug!("Size + 19: {}", ti_basic_data.len() + 19);
     index_pointer = copy_into_index(
         &mut header,
-        &int_to_bytes(ti_basic_data.len() + 19)?,
+        &int_to_bytes(ti_basic_data.len() + 19),
         index_pointer,
     );
 
@@ -130,7 +129,7 @@ pub fn create_metadata(
     );
 
     let size = ti_basic_data.len() + 2;
-    index_pointer = copy_into_index(&mut header, &int_to_bytes(size)?, index_pointer);
+    index_pointer = copy_into_index(&mut header, &int_to_bytes(size), index_pointer);
 
     // 0x05 means editable program, 0x06 means uneditable
     header[index_pointer] = 0x05;
@@ -152,9 +151,9 @@ pub fn create_metadata(
     index_pointer = copy_into_index(&mut header, &string_bytes, index_pointer);
 
     // Adding the size a second time as it is repeated after the name
-    index_pointer = copy_into_index(&mut header, &int_to_bytes(size)?, index_pointer);
+    index_pointer = copy_into_index(&mut header, &int_to_bytes(size), index_pointer);
 
-    index_pointer = copy_into_index(&mut header, &int_to_bytes(size - 2)?, index_pointer);
+    index_pointer = copy_into_index(&mut header, &int_to_bytes(size - 2), index_pointer);
 
     if index_pointer != 74 {
         return Err(anyhow::Error::msg(format!(
@@ -169,7 +168,7 @@ pub fn create_metadata(
         .map(|&x| x as u32)
         .sum::<u32>() as usize;
 
-    let footer = int_to_bytes(checksum)?;
+    let footer = int_to_bytes(checksum);
 
     debug!("Generated header: {:x?}", header);
     debug!("Generated footer: {:x?}", footer);
@@ -179,18 +178,18 @@ pub fn create_metadata(
 
 /// Compile a Vec of strings into a Vec of bytes, representing a TI-8XP bytecode program.
 ///
-/// This function takes a `Vec` of `&str` containing the source code lines and attempts to convert
+/// This function takes a [`Vec`] of `&str` containing the source code lines and attempts to convert
 /// it into a sequence of bytes that represent a bytecode program. It replaces the `→` character
 /// with `->` in the input and uses a provided set of tokens to map substrings to bytes.
 ///
 /// # Arguments
 ///
-/// * `file_contents`: A `Vec` of `&str` containing the source code lines.
+/// * `file_contents`: A [`Vec`] of `&str` containing the source code lines.
 ///
 /// # Returns
 ///
-/// A `Result` containing a `Vec` of `u8` bytes representing the bytecode program if compilation
-/// is successful, or an `anyhow::Error` if an error occurs during compilation.
+/// A [`Result`] containing a [`Vec`] of [`u8`] bytes representing the bytecode program if compilation
+/// is successful, or an [`anyhow::Error`] if an error occurs during compilation.
 ///
 /// # Examples
 ///

@@ -31,7 +31,7 @@ pub fn valid_8xp_header(header: [u8; 74]) -> bool {
     header[..10] == common::FILE_HEADER
 }
 
-/// Reads binary data and constructs a `TIFile` struct from it.
+/// Reads binary data and constructs a [`TIFile`] struct from it.
 ///
 /// # Arguments
 ///
@@ -39,7 +39,7 @@ pub fn valid_8xp_header(header: [u8; 74]) -> bool {
 ///
 /// # Returns
 ///
-/// Returns a `Result` containing a `TIFile` if successful, or an error if the data is invalid.
+/// Returns a [`Result`] containing a [`TIFile`] if successful, or an error if the data is invalid.
 pub fn read_binary_data(data: Vec<u8>) -> Result<TIFile, anyhow::Error> {
     if data.len() < 74 {
         debug!("{:?}", data);
@@ -76,7 +76,7 @@ pub fn read_binary_data(data: Vec<u8>) -> Result<TIFile, anyhow::Error> {
 ///
 /// # Returns
 ///
-/// Returns a `Result` containing a vector of strings if successful, or an error if the decompilation fails.
+/// Returns a [`Result`] containing a vector of strings if successful, or an error if the decompilation fails.
 pub fn decompile(data: Vec<u8>) -> Result<Vec<String>, anyhow::Error> {
     let ti_data = read_binary_data(data)?;
     debug!("{:x?}", ti_data);

@@ -3,9 +3,9 @@ use std::{fs, process};
 use clap::{arg, ArgGroup};
 use log::error;
 use tio2::{
-    interpreter,
+    // interpreter,
     translation::{common::TIFile, compile, decompile},
-    utils,
+    utils
 };
 
 fn main() {
@@ -14,7 +14,7 @@ fn main() {
     // define the CLI interface
     let matches = clap::command!()
         .args(&[
-            arg!(-r --run <INFILE> "Interpret an input file. Can be a .8XP file or decompiled TI-BASIC text."),
+            // arg!(-r --run <INFILE> "Interpret an input file. Can be a .8XP file or decompiled TI-BASIC text."),
             arg!(-d --decompile <INFILE> "Decompile an input file and write to an output file. Defaults to stdout."),
             arg!(-c --compile <INFILE> "Compile a TI-BASIC text file into an 8XP file.").requires("name"),
             arg!(-o --out <OUTFILE> "Specify a file to output to, if applicable (decompilation)."),
@@ -22,7 +22,11 @@ fn main() {
         ])
         .group(
             ArgGroup::new("action")
-            .args(["run", "decompile", "compile"])
+            .args([
+                // "run",
+                "decompile",
+                "compile"
+            ])
             .required(true),
         )
         .get_matches();
@@ -32,8 +36,8 @@ fn main() {
         filename
     } else if let Some(filename) = matches.get_one::<String>("compile") {
         filename
-    } else if let Some(filename) = matches.get_one::<String>("run") {
-        filename
+    // } else if let Some(filename) = matches.get_one::<String>("run") {
+    //     filename
     } else {
         error!("Something has gone terribly wrong and the infile name couldn't be read");
         process::exit(1);
@@ -130,28 +134,28 @@ fn main() {
                 process::exit(1);
             }
         };
-    } else if matches.contains_id("run") {
-        let file_data = match utils::read_file_bytes(filename) {
-            Ok(v) => v, // Success, store the file data
-            Err(e) => {
-                // Error, log the message and exit the program with an 1
-                error!("Could not read file: {}", e);
-                process::exit(1);
-            }
-        };
+        // } else if matches.contains_id("run") {
+        //     let file_data = match utils::read_file_bytes(filename) {
+        //         Ok(v) => v, // Success, store the file data
+        //         Err(e) => {
+        //             // Error, log the message and exit the program with an 1
+        //             error!("Could not read file: {}", e);
+        //             process::exit(1);
+        //         }
+        //     };
 
-        let ti_program = match decompile::read_binary_data(file_data) {
-            Ok(v) => v,
-            Err(e) => {
-                error!("Could not parse binary data: {}", e);
-                process::exit(1);
-            }
-        };
+        //     let ti_program = match decompile::read_binary_data(file_data) {
+        //         Ok(v) => v,
+        //         Err(e) => {
+        //             error!("Could not parse binary data: {}", e);
+        //             process::exit(1);
+        //         }
+        //     };
 
-        let mut bytecode = interpreter::Interpreter::new(&ti_program).unwrap();
-        bytecode.parse_bytes();
-        println!("{:?}", bytecode);
-        bytecode.interpret_bytes(None);
+        //     let mut bytecode = interpreter::Interpreter::new(&ti_program).unwrap();
+        //     bytecode.parse_bytes();
+        //     println!("{:?}", bytecode);
+        //     bytecode.interpret_bytes(None);
     }
 
     // // Check if the file data is valid UTF-8 or not

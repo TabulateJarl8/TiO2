@@ -3,7 +3,7 @@ use std::{collections::HashMap, io::Write};
 use crate::{
     translation::{
         common::TIFile,
-        tokens::{Byte, TokenType, BYTE_TOKENS},
+        tokens::{Byte, BYTE_TOKENS},
     },
     utils,
 };
@@ -21,8 +21,6 @@ pub struct Interpreter {
     pub labels: Vec<Lbl>,
     /// The pointer to the current address in the bytes memory
     pub bytes_pointer: usize,
-    /// The stack of the parsed instructions
-    pub instruction_stack: Vec<TokenType>,
     /// A buffer string for consuming tokens
     pub current_token_consumer: String,
     pub variables: HashMap<String, String>,
@@ -95,7 +93,6 @@ impl Interpreter {
             bytes: ti_program.data.to_vec(),
             labels,
             bytes_pointer: 0,
-            instruction_stack: Vec::new(),
             current_token_consumer: String::new(),
             variables: HashMap::new(),
         })
@@ -139,68 +136,6 @@ impl Interpreter {
     /// );
     /// ```
     pub fn parse_bytes(&mut self) -> Result<(), anyhow::Error> {
-        while self.bytes_pointer < self.bytes.len() {
-            self.parse_byte_at_pointer()?;
-        }
-
-        // push remaining tokens onto stack if there are any
-        self.instruction_stack
-            .push(TokenType::Token(self.current_token_consumer.clone()));
-        self.current_token_consumer.clear();
-
-        // clear out empty list elements
-        self.instruction_stack.retain(|x| !x.is_empty());
-
-        Ok(())
-    }
-
-    /// Parses the byte at the current `bytes_pointer` position and processes it based on the current parsing state.
-    ///
-    /// This function examines the byte at the current `bytes_pointer` position in the `bytes` field and processes it
-    /// based on the current parsing state. It handles various token types, including functions, tokens, and strings.
-    /// If a function or token has been fully consumed, it is added to the `instruction_stack`. If a token has not been
-    /// fully consumed, it is appended to the `current_token_consumer` for further processing.
-    ///
-    /// # Errors
-    ///
-    /// If an unexpected or invalid byte is encountered, this function may return an error describing the issue.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use tio2::{
-    ///     interpreter::Interpreter,
-    ///     translation::{common::TIFile, tokens::TokenType},
-    /// };
-    ///
-    /// // Equal to `Disp "A"`
-    /// let ti_program = TIFile {
-    ///     header: [0; 74],
-    ///     data: vec![0xde, 0x2a, 0x41, 0x2a],
-    ///     footer: vec![],
-    /// };
-    ///
-    /// let mut interpreter = Interpreter::new(&ti_program).expect("Failed to create interpreter");
-    /// interpreter
-    ///     .parse_byte_at_pointer()
-    ///     .expect("Failed to parse byte");
-    /// // The parsed token is either added to the instruction stack or the current token consumer,
-    /// // depending on whether it has been fully consumed.
-    /// assert_eq!(
-    ///     interpreter.instruction_stack.last().unwrap(),
-    ///     &TokenType::RHSFunction("Disp ")
-    /// );
-    ///
-    /// // parse the next 3 bytes
-    /// for _ in 0..3 {
-    ///     interpreter
-    ///         .parse_byte_at_pointer()
-    ///         .expect("Failed to parse byte");
-    /// }
-    ///
-    /// assert_eq!(interpreter.current_token_consumer, String::from("\"A\""));
-    /// ```
-    pub fn parse_byte_at_pointer(&mut self) -> Result<(), anyhow::Error> {
         
 
         Ok(())
