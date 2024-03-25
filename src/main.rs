@@ -4,8 +4,7 @@ use clap::{arg, ArgGroup};
 use log::error;
 use tio2::{
     // interpreter,
-    translation::{common::TIFile, compile, decompile},
-    utils
+    interpreter::bytecode_parser, translation::{common::TIFile, compile, decompile::{self, read_binary_data}}, utils
 };
 
 fn main() {
@@ -53,6 +52,9 @@ fn main() {
                 process::exit(1);
             }
         };
+
+        let program = read_binary_data(file_data.clone()).unwrap();
+        bytecode_parser::tokenize_bytecode(program);
 
         let ti_file_string = match decompile::decompile(file_data) {
             Ok(v) => v.join("\n"), // Success, join the result into a string

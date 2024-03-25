@@ -9,5 +9,6 @@ pub mod translation {
 }
 
 pub mod errors;
-// pub mod interpreter;
 pub mod utils;
+#[cfg(feature = "interpreter")]
+pub mod interpreter;
