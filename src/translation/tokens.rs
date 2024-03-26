@@ -66,6 +66,7 @@ lazy_static! {
     /// }
     /// ```
     pub static ref BYTE_TOKENS: HashMap<Byte, &'static str> = [
+        // http://tibasicdev.wikidot.com/tokens
         (Byte::Single(0x01), ">DMS"),
         (Byte::Single(0x02), ">Dec"),
         (Byte::Single(0x03), ">Frac"),
@@ -538,7 +539,10 @@ lazy_static! {
         (Byte::Double([0x7E, 0x03]), "RectGC"),
         (Byte::Double([0x7E, 0x04]), "CoordOn"),
         (Byte::Double([0x7E, 0x05]), "CoordOff"),
-        (Byte::Double([0x7E, 0x06]), "Connected"),
+        // FIXME: there seems to be a discrepancy between calculators
+        // on my TI-84+CE this is Thick, but on older models i think
+        // its Connected
+        // (Byte::Double([0x7E, 0x06]), "Connected"),
         (Byte::Double([0x7E, 0x07]), "Dot"),
         (Byte::Double([0x7E, 0x08]), "AxesOn"),
         (Byte::Double([0x7E, 0x09]), "AxesOff"),

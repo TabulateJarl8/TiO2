@@ -114,10 +114,45 @@ pub fn tokenize_bytecode(ti_program: TIFile) {
             0x5C..=0x5E | 0x60..=0x63 | 0xAA | 0xBB | 0xEF | 0x7E => {
                 // double byte tokens
                 bytecode_pc += 1;
-                let current_token = bytecode[bytecode_pc];
+                let second_token = bytecode[bytecode_pc];
 
-                match current_token {
-                    _ => program_state.add_token(Byte::Single(current_token)),
+                let (opcode, block_function, is_function) = match (current_token, second_token) {
+                    (0xBB, 0x00..=0x0F) => {
+                        (Byte::Double([current_token, second_token]), false, true)
+                    }
+                    (0xBB, 0x52 | 0x4F | 0x4D | 0x67 | 0x51 | 0x66 | 0x50 | 0x4A | 0x68 | 0x54) => {
+                        (Byte::Double([current_token, second_token]), true, true)
+                    }
+                    (0xEF, 0x67 | 0x09 | 0x0A | 0x06 | 0x32) => {
+                        (Byte::Double([current_token, second_token]), false, true)
+                    }
+                    (
+                        0xEF,
+                        0x5B
+                        | 0x64
+                        | 0x6C
+                        | 0x37..=0x39
+                        | 0x3B
+                        | 0x10
+                        | 0x0F
+                        | 0x96
+                        | 0x75
+                        | 0x3A
+                        | 0x40
+                        | 0x6A
+                        | 0x6B
+                        | 0x3F,
+                    ) => (Byte::Double([current_token, second_token]), true, true),
+                    (0x7E, 0x00..=0x12) => {
+                        (Byte::Double([current_token, second_token]), true, true)
+                    }
+                    _ => (Byte::Double([current_token, second_token]), false, false),
+                };
+
+                if is_function {
+                    program_state.add_function(opcode, block_function);
+                } else {
+                    program_state.add_token(opcode);
                 }
             }
             // check if the current token is `"` so that we can start tokenizing
