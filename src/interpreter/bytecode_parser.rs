@@ -9,7 +9,7 @@ struct Function {
     /// The opcode of the function. Can be one or two bytes.
     opcode: Byte,
     /// The arguments of the function
-    args: Vec<TIToken>,
+    args: Vec<Vec<TIToken>>,
     /// Whether or not the function is a block function (i.e., it doesnt begin with `(`
     /// and you can only have 1 per line)
     block_function: bool,
@@ -22,7 +22,7 @@ impl Function {
     fn new(opcode: Byte, block_function: bool) -> Self {
         Self {
             opcode,
-            args: Vec::new(),
+            args: vec![Vec::new()],
             block_function,
             open_parenthesis: 1,
         }
@@ -34,7 +34,6 @@ enum TIToken {
     Number(f64),
     String(String),
     Function(Function),
-    Expression(Vec<u8>),
     Token(Byte),
 }
 
@@ -52,31 +51,37 @@ impl TIProgramState {
     fn push_token(&mut self, token: TIToken) {
         // check if the token should be added as a argument to the last function
         // or not
-        if let Some(prev_tok) = self.tokens.last_mut() {
-            if let TIToken::Function(func) = prev_tok {
-                // newline, collapse function parenthesis and ignore
-                if token == TIToken::Token(Byte::Single(0x3F)) {
-                    func.open_parenthesis = 0;
-                    return;
-                // closing parenthesis
-                } else if token == TIToken::Token(Byte::Single(0x11)) {
-                    func.open_parenthesis -= 1;
-                    return;
-                }
 
-                // check if the previous function is still open
-                if func.open_parenthesis > 0 {
-                    func.args.push(token);
+        match token {
+            // newline, collapse function parenthesis and ignore
+            TIToken::Token(Byte::Single(0x3F)) => {
+                if let Some(TIToken::Function(func)) = self.tokens.last_mut() {
+                    func.open_parenthesis = 0;
+                }
+            }
+            // closing parenthesis
+            TIToken::Token(Byte::Single(0x11)) => {
+                if let Some(TIToken::Function(func)) = self.tokens.last_mut() {
+                    if func.open_parenthesis > 0 {
+                        func.open_parenthesis -= 1;
+                    }
+                }
+            }
+            TIToken::Function(_) | TIToken::Number(_) | TIToken::String(_) | TIToken::Token(_) => {
+                if let Some(TIToken::Function(func)) = self.tokens.last_mut() {
+                    if func.open_parenthesis > 0 {
+                        if token == TIToken::Token(Byte::Single(0x2B)) {
+                            func.args.push(Vec::new());
+                        } else if let Some(current_args) = func.args.last_mut() {
+                            current_args.push(token);
+                        }
+                    } else {
+                        self.tokens.push(token);
+                    }
                 } else {
                     self.tokens.push(token);
                 }
-            } else {
-                // last token isn't a function
-                self.tokens.push(token);
             }
-        } else {
-            // the list is empty, push the tokens as normal
-            self.tokens.push(token);
         }
     }
 
