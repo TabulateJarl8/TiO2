@@ -3,17 +3,11 @@ use crate::translation::{
     tokens::{Byte, BYTE_TOKENS},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum OpCode {
-    SingleByte(u8),
-    DoubleByte([u8; 2]),
-}
-
 /// A function object
 #[derive(Debug, Clone, PartialEq)]
 struct Function {
     /// The opcode of the function. Can be one or two bytes.
-    opcode: OpCode,
+    opcode: Byte,
     /// The arguments of the function
     args: Vec<TIToken>,
     /// Whether or not the function is a block function (i.e., it doesnt begin with `(`
@@ -25,7 +19,7 @@ struct Function {
 }
 
 impl Function {
-    fn new(opcode: OpCode, block_function: bool) -> Self {
+    fn new(opcode: Byte, block_function: bool) -> Self {
         Self {
             opcode,
             args: Vec::new(),
@@ -41,7 +35,7 @@ enum TIToken {
     String(String),
     Function(Function),
     Expression(Vec<u8>),
-    Token(u8),
+    Token(Byte),
 }
 
 /// A struct representing the state of a TI program
@@ -61,11 +55,11 @@ impl TIProgramState {
         if let Some(prev_tok) = self.tokens.last_mut() {
             if let TIToken::Function(func) = prev_tok {
                 // newline, collapse function parenthesis and ignore
-                if token == TIToken::Token(0x3F) {
+                if token == TIToken::Token(Byte::Single(0x3F)) {
                     func.open_parenthesis = 0;
                     return;
                 // closing parenthesis
-                } else if token == TIToken::Token(0x11) {
+                } else if token == TIToken::Token(Byte::Single(0x11)) {
                     func.open_parenthesis -= 1;
                     return;
                 }
@@ -92,7 +86,7 @@ impl TIProgramState {
     }
 
     /// Add a function token to the token list
-    fn add_function(&mut self, opcode: OpCode, block_function: bool) {
+    fn add_function(&mut self, opcode: Byte, block_function: bool) {
         self.push_token(TIToken::Function(Function::new(opcode, block_function)));
     }
 
@@ -101,7 +95,7 @@ impl TIProgramState {
         self.push_token(TIToken::Number(token));
     }
 
-    fn add_token(&mut self, token: u8) {
+    fn add_token(&mut self, token: Byte) {
         self.push_token(TIToken::Token(token));
     }
 }
@@ -121,6 +115,10 @@ pub fn tokenize_bytecode(ti_program: TIFile) {
                 // double byte tokens
                 bytecode_pc += 1;
                 let current_token = bytecode[bytecode_pc];
+
+                match current_token {
+                    _ => program_state.add_token(Byte::Single(current_token)),
+                }
             }
             // check if the current token is `"` so that we can start tokenizing
             // a string
@@ -147,7 +145,7 @@ pub fn tokenize_bytecode(ti_program: TIFile) {
             | 0xE6..=0xE8
             | 0xEC..=0xEE => {
                 // check for multi-line functions (can be started and ended with `(` and `)`)
-                program_state.add_function(OpCode::SingleByte(current_token), false);
+                program_state.add_function(Byte::Single(current_token), false);
             }
             0x2E..=0x2F
             | 0x5F..=0x69
@@ -166,9 +164,9 @@ pub fn tokenize_bytecode(ti_program: TIFile) {
             | 0xE9..=0xEA
             | 0xF2..=0xFF => {
                 // block level functions (only one per line, ended with `\n`)
-                program_state.add_function(OpCode::SingleByte(current_token), true);
+                program_state.add_function(Byte::Single(current_token), true);
             }
-            _ => program_state.add_token(current_token),
+            _ => program_state.add_token(Byte::Single(current_token)),
         }
         bytecode_pc += 1;
     }
