@@ -1,4 +1,7 @@
-use crate::translation::{common::TIFile, tokens::{Byte, BYTE_TOKENS}};
+use crate::translation::{
+    common::TIFile,
+    tokens::{Byte, BYTE_TOKENS},
+};
 
 #[derive(Debug)]
 enum TIToken {
@@ -15,9 +18,7 @@ struct TIProgramState {
 
 impl TIProgramState {
     fn new() -> Self {
-        Self {
-            tokens: Vec::new(),
-        }
+        Self { tokens: Vec::new() }
     }
 
     fn add_string(&mut self, token: String) {
@@ -37,49 +38,70 @@ pub fn tokenize_bytecode(ti_program: TIFile) {
     let bytecode = ti_program.data;
     println!("{:x?}", &bytecode);
     let mut bytecode_pc: usize = 0;
-    let mut consuming_string = false;
-    let mut consuming_number = false;
-    let mut string_buffer = String::new();
-    let mut number_buffer = String::new();
 
     let mut program_state = TIProgramState::new();
 
     while bytecode_pc < bytecode.len() {
         let current_token = bytecode[bytecode_pc];
-        println!("{:x?}", current_token);
 
-        
-        if consuming_string {
-            if current_token == 0x2A || current_token == 0x3F {
-                consuming_string = false;
-                program_state.add_string(string_buffer.clone());
-                string_buffer.clear();
-            } else {
-                string_buffer += BYTE_TOKENS.get(&Byte::Single(current_token)).unwrap();
+        match current_token {
+            0x2A => {
+                // advance past the current " since we don't tokenize that
+                bytecode_pc += 1;
+                consume_string(&mut bytecode_pc, &bytecode, &mut program_state);
             }
-        } else if consuming_number {
-            if (0x30..=0x39).contains(&current_token) || [0x3A, 0xB0].contains(&current_token) {
-                number_buffer += BYTE_TOKENS.get(&Byte::Single(current_token)).unwrap();
-            } else {
-                consuming_number = false;
-                program_state.add_number(number_buffer.parse::<f64>().expect("number failed to convert from string"));
-                number_buffer.clear();
-
-                // TODO: this is terrible and the next token just isnt being included
+            0x30..=0x39 | 0x3A | 0xB0 => {
+                consume_number(&mut bytecode_pc, &bytecode, &mut program_state)
             }
-        } else {
-            if current_token == 0x2A {
-                consuming_string = true;
-            } else if (0x30..=0x39).contains(&current_token) || [0x3A, 0xB0].contains(&current_token) {
-                consuming_number = true;
-                number_buffer += BYTE_TOKENS.get(&Byte::Single(current_token)).unwrap();
-            } else {
-                program_state.add_function(current_token);
-            }
+            _ => program_state.add_function(current_token),
         }
         bytecode_pc += 1;
     }
 
-    dbg!(program_state);
+    println!("{:x?}", program_state);
+}
 
+fn consume_string(bytecode_pc: &mut usize, bytecode: &[u8], program_state: &mut TIProgramState) {
+    let mut string_buffer = String::new();
+    let mut consuming_string = true;
+
+    while *bytecode_pc < bytecode.len() && consuming_string {
+        let current_token = bytecode[*bytecode_pc];
+        if current_token == 0x2A || current_token == 0x3F {
+            consuming_string = false;
+            program_state.add_string(string_buffer.clone());
+
+            // we dont increment the pc here because its incremented in tokenize_bytecode
+            // after the function returns
+        } else {
+            string_buffer += BYTE_TOKENS.get(&Byte::Single(current_token)).unwrap();
+            *bytecode_pc += 1;
+            dbg!(&string_buffer);
+        }
+    }
+}
+
+fn consume_number(bytecode_pc: &mut usize, bytecode: &[u8], program_state: &mut TIProgramState) {
+    let mut consuming_number = true;
+    let mut number_buffer = String::new();
+
+    while *bytecode_pc < bytecode.len() && consuming_number {
+        let current_token = bytecode[*bytecode_pc];
+
+        if (0x30..=0x39).contains(&current_token) || [0x3A, 0xB0].contains(&current_token) {
+            number_buffer += BYTE_TOKENS.get(&Byte::Single(current_token)).unwrap();
+            *bytecode_pc += 1;
+        } else {
+            consuming_number = false;
+            program_state.add_number(
+                number_buffer
+                    .parse::<f64>()
+                    .expect("number failed to convert from string"),
+            );
+
+            // we decrease this by one 1 since the outer function increases it
+            // and we haven't done anything with the current token
+            *bytecode_pc -= 1;
+        }
+    }
 }
