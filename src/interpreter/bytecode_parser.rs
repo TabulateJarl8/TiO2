@@ -1,18 +1,16 @@
-use std::ops::RangeInclusive;
-
 use crate::translation::{
     common::TIFile,
     tokens::{Byte, BYTE_TOKENS},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OpCode {
     SingleByte(u8),
     DoubleByte([u8; 2]),
 }
 
 /// A function object
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 struct Function {
     /// The opcode of the function. Can be one or two bytes.
     opcode: OpCode,
@@ -37,7 +35,7 @@ impl Function {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 enum TIToken {
     Number(f64),
     String(String),
@@ -57,24 +55,54 @@ impl TIProgramState {
         Self { tokens: Vec::new() }
     }
 
+    fn push_token(&mut self, token: TIToken) {
+        // check if the token should be added as a argument to the last function
+        // or not
+        if let Some(prev_tok) = self.tokens.last_mut() {
+            if let TIToken::Function(func) = prev_tok {
+                // newline, collapse function parenthesis and ignore
+                if token == TIToken::Token(0x3F) {
+                    func.open_parenthesis = 0;
+                    return;
+                // closing parenthesis
+                } else if token == TIToken::Token(0x11) {
+                    func.open_parenthesis -= 1;
+                    return;
+                }
+
+                // check if the previous function is still open
+                if func.open_parenthesis > 0 {
+                    func.args.push(token);
+                } else {
+                    self.tokens.push(token);
+                }
+            } else {
+                // last token isn't a function
+                self.tokens.push(token);
+            }
+        } else {
+            // the list is empty, push the tokens as normal
+            self.tokens.push(token);
+        }
+    }
+
     /// Add a string token to the token list
     fn add_string(&mut self, token: String) {
-        self.tokens.push(TIToken::String(token));
+        self.push_token(TIToken::String(token));
     }
 
     /// Add a function token to the token list
     fn add_function(&mut self, opcode: OpCode, block_function: bool) {
-        self.tokens
-            .push(TIToken::Function(Function::new(opcode, block_function)));
+        self.push_token(TIToken::Function(Function::new(opcode, block_function)));
     }
 
     /// Add a number token to the token list
     fn add_number(&mut self, token: f64) {
-        self.tokens.push(TIToken::Number(token));
+        self.push_token(TIToken::Number(token));
     }
 
     fn add_token(&mut self, token: u8) {
-        self.tokens.push(TIToken::Token(token));
+        self.push_token(TIToken::Token(token));
     }
 }
 
@@ -121,15 +149,31 @@ pub fn tokenize_bytecode(ti_program: TIFile) {
                 // check for multi-line functions (can be started and ended with `(` and `)`)
                 program_state.add_function(OpCode::SingleByte(current_token), false);
             }
-            0x2E..=0x2F | 0x5F..=0x69 | 0x73..=0x7D | 0x84..=0x92 | 0x96..=0x9B | 0x9D |  => {
-
+            0x2E..=0x2F
+            | 0x5F..=0x69
+            | 0x73..=0x7D
+            | 0x84..=0x92
+            | 0x96..=0x9B
+            | 0x9D
+            | 0xA6
+            | 0xA8..=0xA9
+            | 0xAB
+            | 0xAD
+            | 0xCE..=0xD9
+            | 0xDC..=0xDF
+            | 0xE1
+            | 0xE5
+            | 0xE9..=0xEA
+            | 0xF2..=0xFF => {
+                // block level functions (only one per line, ended with `\n`)
+                program_state.add_function(OpCode::SingleByte(current_token), true);
             }
             _ => program_state.add_token(current_token),
         }
         bytecode_pc += 1;
     }
 
-    println!("{:x?}", program_state);
+    println!("{:#x?}", program_state);
 }
 
 /// Try to consume a string from the current set of tokens

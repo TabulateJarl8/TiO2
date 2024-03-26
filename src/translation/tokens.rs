@@ -244,7 +244,7 @@ lazy_static! {
         (Byte::Single(0xBA), "fPart("),
         (Byte::Single(0xBC), "sqrt("),
         (Byte::Single(0xBD), "cubrt("),
-        (Byte::Single(0xBE), "ln ("),
+        (Byte::Single(0xBE), "ln("),
         (Byte::Single(0xBF), "e^("),
         (Byte::Single(0xC0), "log("),
         (Byte::Single(0xC1), "10^("),
