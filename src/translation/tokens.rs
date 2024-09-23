@@ -1,7 +1,6 @@
 //! The `tokens` module provides utilities for encoding and decoding data when
 //! interacting with TI-8XP files.
-use lazy_static::lazy_static;
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, hash::Hash, sync::LazyLock};
 
 /// A utility function that returns the inverse mapping of byte tokens.
 /// Used when compiling to bytes instead of decompiling from bytes.
@@ -51,21 +50,21 @@ pub enum Byte {
     Double([u8; 2]),
 }
 
-lazy_static! {
-    /// Provides a [`HashMap`] of byte tokens where the key is a [`Byte`] and the value is a `&'static str`.
-    ///
-    /// This hashmap contains mappings for byte tokens used in TI-8XP files.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
-    ///
-    /// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
-    ///     assert_eq!(token, &">DMS");
-    /// }
-    /// ```
-    pub static ref BYTE_TOKENS: HashMap<Byte, &'static str> = [
+/// Provides a [`HashMap`] of byte tokens where the key is a [`Byte`] and the value is a `&'static str`.
+///
+/// This hashmap contains mappings for byte tokens used in TI-8XP files.
+///
+/// # Example
+///
+/// ```
+/// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
+///
+/// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
+///     assert_eq!(token, &">DMS");
+/// }
+/// ```
+pub static BYTE_TOKENS: LazyLock<HashMap<Byte, &'static str>> = LazyLock::new(|| {
+    let m: HashMap<Byte, &'static str> = [
         // http://tibasicdev.wikidot.com/tokens
         (Byte::Single(0x01), ">DMS"),
         (Byte::Single(0x02), ">Dec"),
@@ -555,5 +554,9 @@ lazy_static! {
         (Byte::Double([0x7E, 0x10]), "uvAxes"),
         (Byte::Double([0x7E, 0x11]), "vwAxes"),
         (Byte::Double([0x7E, 0x12]), "uwAxes"),
-    ].iter().cloned().collect();
-}
+    ]
+    .iter()
+    .cloned()
+    .collect();
+    m
+});
