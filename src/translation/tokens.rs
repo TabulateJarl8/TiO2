@@ -21,9 +21,6 @@ use std::{collections::HashMap, hash::Hash, sync::LazyLock};
 pub fn get_inverse_tokens_as_str() -> HashMap<&'static str, Byte> {
     let mut flipped: HashMap<&'static str, Byte> = Default::default();
 
-    // BYTE_TOKENS.clone().into_iter().for_each(|(key, value)| {
-    //     flipped.insert(value.as_ref(), key);
-    // });
     for (byte, token) in BYTE_TOKENS.iter() {
         flipped.insert(token.as_ref(), *byte);
     }
