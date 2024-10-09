@@ -1,6 +1,6 @@
 use crate::translation::{
     common::TIFile,
-    tokens::{Byte, BYTE_TOKENS},
+    tokens::{self, Byte, BYTE_TOKENS},
 };
 
 /// A function object
@@ -29,12 +29,27 @@ impl Function {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 enum TIToken {
     Number(f64),
     String(String),
     Function(Function),
     Token(Byte),
+}
+
+impl std::fmt::Debug for TIToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
+            Self::String(arg0) => f.debug_tuple("String").field(arg0).finish(),
+            Self::Function(arg0) => f.debug_tuple("Function").field(arg0).finish(),
+            Self::Token(arg0) => f
+                .debug_tuple("Token")
+                .field(arg0)
+                .field(&tokens::BYTE_TOKENS.get(arg0))
+                .finish(),
+        }
+    }
 }
 
 /// A struct representing the state of a TI program
