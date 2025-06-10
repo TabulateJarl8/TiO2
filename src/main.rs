@@ -4,7 +4,13 @@ use clap::{arg, ArgGroup};
 use log::error;
 use tio2::{
     // interpreter,
-    interpreter::bytecode_parser, translation::{common::TIFile, compile, decompile::{self, read_binary_data}}, utils
+    interpreter::bytecode_parser,
+    translation::{
+        common::TIFile,
+        compile,
+        decompile::{self, read_binary_data},
+    },
+    utils,
 };
 
 fn main() {

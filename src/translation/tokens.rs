@@ -54,7 +54,7 @@ pub enum Byte {
 /// # Example
 ///
 /// ```
-/// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
+/// use tio2::translation::tokens::{Byte, BYTE_TOKENS};
 ///
 /// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
 ///     assert_eq!(token, &">DMS");
@@ -286,6 +286,7 @@ pub static BYTE_TOKENS: LazyLock<HashMap<Byte, &'static str>> = LazyLock::new(||
         (Byte::Single(0xE8), "Get("),
         (Byte::Single(0xE9), "PlotsOn "),
         (Byte::Single(0xEA), "PlotsOff "),
+        (Byte::Single(0xEB), "l"),
         (Byte::Single(0xEC), "Plot1("),
         (Byte::Single(0xED), "Plot2("),
         (Byte::Single(0xEE), "Plot3("),
@@ -305,7 +306,6 @@ pub static BYTE_TOKENS: LazyLock<HashMap<Byte, &'static str>> = LazyLock::new(||
         (Byte::Single(0xFD), "xyLine"),
         (Byte::Single(0xFE), "Scatter"),
         (Byte::Single(0xFF), "LinReg(ax+b) "),
-        (Byte::Single(0xEB), "l"),
         // System variables (incomplete: TODO)
         (Byte::Double([0x5C, 0x00]), "[A]"),
         (Byte::Double([0x5C, 0x01]), "[B]"),

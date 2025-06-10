@@ -5,10 +5,11 @@ pub mod translation {
     pub mod common;
     pub mod compile;
     pub mod decompile;
+    pub mod opcode;
     pub mod tokens;
 }
 
 pub mod errors;
-pub mod utils;
 #[cfg(feature = "interpreter")]
 pub mod interpreter;
+pub mod utils;
