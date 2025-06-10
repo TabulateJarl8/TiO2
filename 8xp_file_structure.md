@@ -70,11 +70,11 @@ The first part of an 8XP file, obviously, is the header. This section contains m
 
 ## File Footer (checksum)
 
-The last 2 bytes in an 8XP file are the checksum of the file. This checksum is very simple if you read these directions carefully. Take the second half of the header, starting at the 56th byte (55 if zero-indexed, like in an array. These are the two unknown bytes, `0xD` and `0x0`), and sum up all of the byte values. Then, sum up the byte values of the data portion of the program. Now, add these two numbers together, and convert them into the integer [carry format](#storing-integers).
+The last 2 bytes in an 8XP file are the checksum of the file. This checksum is very simple if you read these directions carefully. Take the second half of the header, starting at the 55th byte (These are the two unknown bytes, `0xD` and `0x0`), and sum up all of the byte values. Then, sum up the byte values of the data portion of the program. Now, add these two numbers together, and convert them into the integer [carry format](#storing-integers).
 
 ### Example
 
-Let's pretend that the header starting at byte 56 is as follows:
+Let's pretend that the header starting at byte 55 is as follows:
 
 ```asm
 0x0D 0x00 0x18 0x02 0x05 0x54 0x45 0x53 0x54 0x00 0x00 0x00 0x00 0x00 0x00 0x16 0x02 0x14 0x02
