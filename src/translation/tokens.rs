@@ -1,7 +1,6 @@
 //! The `tokens` module provides utilities for encoding and decoding data when
 //! interacting with TI-8XP files.
-use lazy_static::lazy_static;
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, hash::Hash, sync::LazyLock};
 
 /// A utility function that returns the inverse mapping of byte tokens.
 /// Used when compiling to bytes instead of decompiling from bytes.
@@ -22,9 +21,6 @@ use std::{collections::HashMap, hash::Hash};
 pub fn get_inverse_tokens_as_str() -> HashMap<&'static str, Byte> {
     let mut flipped: HashMap<&'static str, Byte> = Default::default();
 
-    // BYTE_TOKENS.clone().into_iter().for_each(|(key, value)| {
-    //     flipped.insert(value.as_ref(), key);
-    // });
     for (byte, token) in BYTE_TOKENS.iter() {
         flipped.insert(token.as_ref(), *byte);
     }
@@ -51,21 +47,22 @@ pub enum Byte {
     Double([u8; 2]),
 }
 
-lazy_static! {
-    /// Provides a [`HashMap`] of byte tokens where the key is a [`Byte`] and the value is a `&'static str`.
-    ///
-    /// This hashmap contains mappings for byte tokens used in TI-8XP files.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use tio2::translation::tokens::{BYTE_TOKENS, Byte};
-    ///
-    /// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
-    ///     assert_eq!(token, &">DMS");
-    /// }
-    /// ```
-    pub static ref BYTE_TOKENS: HashMap<Byte, &'static str> = [
+/// Provides a [`HashMap`] of byte tokens where the key is a [`Byte`] and the value is a `&'static str`.
+///
+/// This hashmap contains mappings for byte tokens used in TI-8XP files.
+///
+/// # Example
+///
+/// ```
+/// use tio2::translation::tokens::{Byte, BYTE_TOKENS};
+///
+/// if let Some(token) = BYTE_TOKENS.get(&Byte::Single(0x01)) {
+///     assert_eq!(token, &">DMS");
+/// }
+/// ```
+pub static BYTE_TOKENS: LazyLock<HashMap<Byte, &'static str>> = LazyLock::new(|| {
+    let m: HashMap<Byte, &'static str> = [
+        // http://tibasicdev.wikidot.com/tokens
         (Byte::Single(0x01), ">DMS"),
         (Byte::Single(0x02), ">Dec"),
         (Byte::Single(0x03), ">Frac"),
@@ -216,10 +213,10 @@ lazy_static! {
         (Byte::Single(0x9D), "Vertical "),
         (Byte::Single(0x9E), "Pt-On("),
         (Byte::Single(0x9F), "Pt-Off("),
-        (Byte::Single(0xA0), "Pt-Change( "),
-        (Byte::Single(0xA1), "Pxl-On( "),
-        (Byte::Single(0xA2), "Pxl-Off( "),
-        (Byte::Single(0xA3), "Pxl-Change( "),
+        (Byte::Single(0xA0), "Pt-Change("),
+        (Byte::Single(0xA1), "Pxl-On("),
+        (Byte::Single(0xA2), "Pxl-Off("),
+        (Byte::Single(0xA3), "Pxl-Change("),
         (Byte::Single(0xA4), "Shade("),
         (Byte::Single(0xA5), "Circle("),
         (Byte::Single(0xA6), "Horizontal "),
@@ -244,7 +241,7 @@ lazy_static! {
         (Byte::Single(0xBA), "fPart("),
         (Byte::Single(0xBC), "sqrt("),
         (Byte::Single(0xBD), "cubrt("),
-        (Byte::Single(0xBE), "ln ("),
+        (Byte::Single(0xBE), "ln("),
         (Byte::Single(0xBF), "e^("),
         (Byte::Single(0xC0), "log("),
         (Byte::Single(0xC1), "10^("),
@@ -289,6 +286,7 @@ lazy_static! {
         (Byte::Single(0xE8), "Get("),
         (Byte::Single(0xE9), "PlotsOn "),
         (Byte::Single(0xEA), "PlotsOff "),
+        (Byte::Single(0xEB), "l"),
         (Byte::Single(0xEC), "Plot1("),
         (Byte::Single(0xED), "Plot2("),
         (Byte::Single(0xEE), "Plot3("),
@@ -308,7 +306,6 @@ lazy_static! {
         (Byte::Single(0xFD), "xyLine"),
         (Byte::Single(0xFE), "Scatter"),
         (Byte::Single(0xFF), "LinReg(ax+b) "),
-        (Byte::Single(0xEB), "l"),
         // System variables (incomplete: TODO)
         (Byte::Double([0x5C, 0x00]), "[A]"),
         (Byte::Double([0x5C, 0x01]), "[B]"),
@@ -538,7 +535,10 @@ lazy_static! {
         (Byte::Double([0x7E, 0x03]), "RectGC"),
         (Byte::Double([0x7E, 0x04]), "CoordOn"),
         (Byte::Double([0x7E, 0x05]), "CoordOff"),
-        (Byte::Double([0x7E, 0x06]), "Connected"),
+        // FIXME: there seems to be a discrepancy between calculators
+        // on my TI-84+CE this is Thick, but on older models i think
+        // its Connected
+        // (Byte::Double([0x7E, 0x06]), "Connected"),
         (Byte::Double([0x7E, 0x07]), "Dot"),
         (Byte::Double([0x7E, 0x08]), "AxesOn"),
         (Byte::Double([0x7E, 0x09]), "AxesOff"),
@@ -551,5 +551,9 @@ lazy_static! {
         (Byte::Double([0x7E, 0x10]), "uvAxes"),
         (Byte::Double([0x7E, 0x11]), "vwAxes"),
         (Byte::Double([0x7E, 0x12]), "uwAxes"),
-    ].iter().cloned().collect();
-}
+    ]
+    .iter()
+    .cloned()
+    .collect();
+    m
+});

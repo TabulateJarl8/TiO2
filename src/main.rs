@@ -3,9 +3,8 @@ use std::{fs, process};
 use clap::{arg, ArgGroup};
 use log::error;
 use tio2::{
-    // interpreter,
     translation::{common::TIFile, compile, decompile},
-    utils
+    utils,
 };
 
 fn main() {
